@@ -1,0 +1,131 @@
+name: e_nation
+description: A new Flutter application.
+
+# The following defines the version and build number for your application.
+# A version number is three numbers separated by dots, like 1.2.43
+# followed by an optional build number separated by a +.
+# Both the version and the builder number may be overridden in flutter
+# build by specifying --build-name and --build-number, respectively.
+# Read more about versioning at semver.org.
+version: 1.0.0+1
+
+environment:
+  sdk: ">=2.0.0-dev.68.0 <3.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  firebase_core: '^0.2.5+1'
+  firebase_auth: '^0.6.6'
+  firebase_database: '^1.0.5'
+  qrcode_reader: '^0.4.4'
+  qr_flutter: '^1.1.5'
+  connectivity: '^0.3.2'
+  charts_flutter: '^0.5.0'
+  #cloud_firestore: '^0.8.2+3'
+  #barcode_scan: '^0.0.8'
+
+  # The following adds the Cupertino Icons font to your application.
+  # Use with the CupertinoIcons class for iOS style icons.
+  cupertino_icons: ^0.1.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+
+# For information on the generic Dart part of this file, see the
+# following page: https://www.dartlang.org/tools/pub/pubspec
+
+# The following section is specific to Flutter.
+flutter:
+
+  # The following line ensures that the Material Icons font is
+  # included with your application, so that you can use the icons in
+  # the material Icons class.
+  uses-material-design: true
+  # To add assets to your application, add an assets section, like this:
+  assets:
+    - packages/e_nation/Assets/building/quarry.jpg
+    - packages/e_nation/Assets/building/logging.jpg
+    - packages/e_nation/Assets/building/Rubber.jpg
+    - packages/e_nation/Assets/building/agriculture.jpg
+    - packages/e_nation/Assets/building/Shirt.jpg
+    - packages/e_nation/Assets/building/Steel.jpg
+    - packages/e_nation/Assets/building/Petrol.jpg
+    - packages/e_nation/Assets/building/Leather.jpg
+    - packages/e_nation/Assets/building/Jewellery.jpg
+    - packages/e_nation/Assets/building/Gloves.jpg
+    - packages/e_nation/Assets/building/Cotton.jpg
+    - packages/e_nation/Assets/building/Copper.jpg
+    - packages/e_nation/Assets/building/Silver.jpg
+    - packages/e_nation/Assets/building/Meat.jpg
+    - packages/e_nation/Assets/building/FoodMeat.jpg
+    - packages/e_nation/Assets/building/FoodVege.jpg
+    - packages/e_nation/Assets/building/Car.jpg
+    - packages/e_nation/Assets/building/HouseholdAppliances.jpg
+    - packages/e_nation/Assets/building/Furniture.jpg
+    - packages/e_nation/Assets/building/Gadget.jpg
+    - packages/e_nation/Assets/building/Bag.jpg
+    - packages/e_nation/Assets/building/Book.jpg
+    - packages/e_nation/Assets/resources/wood.png
+    - packages/e_nation/Assets/resources/Car.png
+    - packages/e_nation/Assets/resources/copper.png
+    - packages/e_nation/Assets/resources/Cotton.png
+    - packages/e_nation/Assets/resources/Leather.png
+    - packages/e_nation/Assets/resources/Meat.png
+    - packages/e_nation/Assets/resources/Oil.jpg
+    - packages/e_nation/Assets/resources/Rubber.jpg
+    - packages/e_nation/Assets/resources/Sand.png
+    - packages/e_nation/Assets/resources/shirt.png
+    - packages/e_nation/Assets/resources/Silver.png
+    - packages/e_nation/Assets/resources/steel.png
+    - packages/e_nation/Assets/resources/Vegetable.png
+    - packages/e_nation/Assets/resources/FoodVege.png
+    - packages/e_nation/Assets/resources/FoodMeat.png
+    - packages/e_nation/Assets/resources/Bag.png
+    - packages/e_nation/Assets/resources/Book.png
+    - packages/e_nation/Assets/resources/Gadget.jpg
+    - packages/e_nation/Assets/resources/Furniture.png
+    - packages/e_nation/Assets/resources/Jewellery.png
+    - packages/e_nation/Assets/resources/HouseholdAppliances.png
+    - packages/e_nation/Assets/resources/Gloves.png
+    - packages/e_nation/Assets/specialBuilding/education.jpg
+    - packages/e_nation/Assets/specialBuilding/healthcare.jpg
+    - packages/e_nation/Assets/specialBuilding/r&d.jpg
+    - packages/e_nation/Assets/specialBuilding/telecommunication.jpg
+    - packages/e_nation/Assets/land.jpg
+    - packages/e_nation/Assets/landIcon.png
+    - packages/e_nation/Assets/trade.jpg
+    - packages/e_nation/Assets/news1.jpg
+    - packages/e_nation/Assets/news2.jpg
+    - packages/e_nation/Assets/news/redCircle.png
+  #  - packages/e_nation/Assets/logging.jpg
+  #  - images/a_dot_burr.jpeg
+  #  - images/a_dot_ham.jpeg
+
+  # An image asset can refer to one or more resolution-specific "variants", see
+  # https://flutter.io/assets-and-images/#resolution-aware.
+
+  # For details regarding adding assets from package dependencies, see
+  # https://flutter.io/assets-and-images/#from-packages
+
+  # To add custom fonts to your application, add a fonts section here,
+  # in this "flutter" section. Each entry in this list should have a
+  # "family" key with the font family name, and a "fonts" key with a
+  # list giving the asset and other descriptors for the font. For
+  # example:
+  # fonts:
+  #   - family: Schyler
+  #     fonts:
+  #       - asset: fonts/Schyler-Regular.ttf
+  #       - asset: fonts/Schyler-Italic.ttf
+  #         style: italic
+  #   - family: Trajan Pro
+  #     fonts:
+  #       - asset: fonts/TrajanPro.ttf
+  #       - asset: fonts/TrajanPro_Bold.ttf
+  #         weight: 700
+  #
+  # For details regarding fonts from package dependencies,
+  # see https://flutter.io/custom-fonts/#from-packages
