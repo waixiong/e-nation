@@ -1,0 +1,55 @@
+{
+  "project_info": {
+    "project_number": "681496751980",
+    "firebase_url": "https://nyes-debuy.firebaseio.com",
+    "project_id": "nyes-debuy",
+    "storage_bucket": "nyes-debuy.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:681496751980:android:fa4feb47237491cd",
+        "android_client_info": {
+          "package_name": "xyz.cstudentstudio.enation"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "681496751980-eijqslfsni9gur7olgarce405d384aq1.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "xyz.cstudentstudio.enation",
+            "certificate_hash": "45dd9c45beb261144b75b4ff57d43661d56194cb"
+          }
+        },
+        {
+          "client_id": "681496751980-4068b2ffbcqbihb7p0bheov877mu06u6.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBdM2lTiOPdoWxpTcQgxNIecNpPZqg-8Vk"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 2,
+          "other_platform_oauth_client": [
+            {
+              "client_id": "681496751980-4068b2ffbcqbihb7p0bheov877mu06u6.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
