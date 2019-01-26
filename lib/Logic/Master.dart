@@ -1,55 +1,67 @@
 class Master{
 
+  List<String> foodList = <String>['Vegetable', 'Meat', 'Processed Vegetable', 'Processed Meat'];
   List<String> resourcesOrder = ['Wood', 'Sand', 'Steel', 'Rubber', 'Cotton',
-  'Petrol', 'Leather', 'Copper', 'Silver', 'Vegetable', 'Meat',
-  'Car', 'Shirt', 'FoodVegetable', 'FoodMeat', 'HouseholdAppliances', 'Furniture',
+  'Oil', 'Leather', 'Copper', 'Silver', 'Vegetable', 'Meat',
+  'Car', 'Shirt', 'Processed Vegetable', 'Processed Meat', 'Solar Panel', 'Furniture',
   'Jewellery', 'Gloves', 'Bag', 'Gadget', 'Book'];
-  var resources = {
+  Map<String, Map<String, dynamic>> resources = {
     'Wood': {
       'price': 5.0,
-      'img': 'packages/e_nation/Assets/resources/wood.png'
+      'img': 'packages/e_nation/Assets/resources/wood.png',
+      'happy': 5
     },
     'Sand': {
       'price': 5.0,
-      'img': 'packages/e_nation/Assets/resources/Sand.png'
+      'img': 'packages/e_nation/Assets/resources/Sand.png',
+      'happy': 5
     },
     'Steel': {
       'price': 20.0,
-      'img': 'packages/e_nation/Assets/resources/steel.png'
+      'img': 'packages/e_nation/Assets/resources/steel.png',
+      'happy': 5
     },
     'Rubber': {
       'price': 4.0,
-      'img': 'packages/e_nation/Assets/resources/Rubber.jpg'
+      'img': 'packages/e_nation/Assets/resources/Rubber.jpg',
+      'happy': 4
     },
     'Cotton': {
       'price': 2.0,
-      'img': 'packages/e_nation/Assets/resources/Cotton.png'
+      'img': 'packages/e_nation/Assets/resources/Cotton.png',
+      'happy': 4
     },
-    'Petrol': {
-      'price': 125.0,
-      'img': 'packages/e_nation/Assets/resources/Oil.jpg'
+    'Oil': {
+      'price': 50.0,
+      'img': 'packages/e_nation/Assets/resources/Oil.jpg',
+      'happy': 4
     },
     'Leather': {
       'price': 15.00,
-      'img': 'packages/e_nation/Assets/resources/Leather.png'
+      'img': 'packages/e_nation/Assets/resources/Leather.png',
+      'happy': 3
     },
     'Copper': {
       'price': 30.00,
-      'img': 'packages/e_nation/Assets/resources/copper.png'
+      'img': 'packages/e_nation/Assets/resources/copper.png',
+      'happy': 3
     },
     'Silver': {
-      'price': 250.00,
-      'img': 'packages/e_nation/Assets/resources/Silver.png'
+      'price': 70.00,
+      'img': 'packages/e_nation/Assets/resources/Silver.png',
+      'happy': 3
     },
     'Vegetable': {
       'price': 3.00,
       'feed': 1,
-      'img': 'packages/e_nation/Assets/resources/Vegetable.png'
+      'img': 'packages/e_nation/Assets/resources/Vegetable.png',
+      'happy': 0
     },
     'Meat': {
       'price': 5.00,
       'feed': 2,
-      'img': 'packages/e_nation/Assets/resources/Meat.png'
+      'img': 'packages/e_nation/Assets/resources/Meat.png',
+      'happy': 0
     },
     /*'rawFood': {
       'price': 5.00,
@@ -57,50 +69,61 @@ class Master{
       'img': 'packages/e_nation/Assets/wood.png'
     },*/
     'Car': {
-      'price': 80.00,
-      'img': 'packages/e_nation/Assets/resources/Car.png'
+      'price': 6400.00,
+      'img': 'packages/e_nation/Assets/resources/Car.png',
+      'happy': 2
     },
     'Shirt': {
-      'price': 5.00,
-      'img': 'packages/e_nation/Assets/resources/shirt.png'
+      'price': 28.00,
+      'img': 'packages/e_nation/Assets/resources/shirt.png',
+      'happy': 3
     },
-    'FoodVegetable': {
-      'price': 10.0,
+    'Processed Vegetable': {
+      'price': 15.0,
       'feed': 2,
-      'img': 'packages/e_nation/Assets/resources/FoodVege.png'
+      'img': 'packages/e_nation/Assets/resources/FoodVege.png',
+      'happy': 1
     },
-    'FoodMeat': {
-      'price': 14.0,
+    'Processed Meat': {
+      'price': 19.0,
       'feed': 3,
-      'img': 'packages/e_nation/Assets/resources/FoodMeat.png'
+      'img': 'packages/e_nation/Assets/resources/FoodMeat.png',
+      'happy': 1
     },
-    'HouseholdAppliances': {
-      'price': 25.0,
-      'img': 'packages/e_nation/Assets/resources/HouseholdAppliances.png'
+    'Solar Panel': {
+      'price': 2500.0,
+      'img': 'packages/e_nation/Assets/resources/SolarPanel.jpg',
+      'happy': 1
     },
     'Furniture': {
-      'price': 20.0,
-      'img': 'packages/e_nation/Assets/resources/Furniture.png'
+      'price': 200.0,
+      'img': 'packages/e_nation/Assets/resources/Furniture.png',
+      'happy': 1
     },
     'Jewellery': {
-      'price': 40.0,
-      'img': 'packages/e_nation/Assets/resources/Jewellery.png'
+      'price': 1350.0,
+      'img': 'packages/e_nation/Assets/resources/Jewellery.png',
+      'happy': 1
     },
     'Gloves': {
-      'price': 16.0,
-      'img': 'packages/e_nation/Assets/resources/Gloves.png'
+      'price': 20.0,
+      'img': 'packages/e_nation/Assets/resources/Gloves.png',
+      'happy': 2
     },
     'Bag': {
-      'price': 20.0,
-      'img': 'packages/e_nation/Assets/resources/Bag.png'
+      'price': 150.0,
+      'img': 'packages/e_nation/Assets/resources/Bag.png',
+      'happy': 2
     },
     'Gadget': {
-      'price': 28.0,
-      'img': 'packages/e_nation/Assets/resources/Gadget.jpg'
+      'price': 1100.0,
+      'img': 'packages/e_nation/Assets/resources/Gadget.jpg',
+      'happy': 3
     },
     'Book': {
-      'price': 10.0,
-      'img': 'packages/e_nation/Assets/resources/Book.png'
+      'price': 30.0,
+      'img': 'packages/e_nation/Assets/resources/Book.png',
+      'happy': 2
     }
   };
   dynamic building = {
@@ -109,13 +132,15 @@ class Master{
         'base': 3.0,
         'upgrade': 1.5
       },
+      'step': 10,
       'input':{
         'Money': 7.5
       },
       'upgrade' : [
-        {'human': 2500, 'Wood': 3000, 'Sand': 3000, 'Steel': 1500, 'Money': 20000},
-        {'human': 2000, 'Wood': 8000, 'Sand': 8000, 'Steel': 4000, 'Money': 50000}
+        {'human': 2500, 'Wood': 2000, 'Sand': 2000, 'Steel': 500, 'Money': 10000},
+        {'human': 2000, 'Wood': 5000, 'Sand': 5000, 'Steel': 1250, 'Money': 25000}
       ],
+      'mortgageValue': [25000, 60000],
       'maxHuman': 1000,
       'img': 'Assets/building/logging.jpg'
     },
@@ -124,28 +149,32 @@ class Master{
         'base': 3.0,
         'upgrade': 1.5
       },
+      'step': 10,
       'input':{
         'Money': 7.5
       },
       'upgrade' : [
-        {'human': 2500, 'Wood': 3000, 'Sand': 3000, 'Steel': 1500, 'Money': 20000},
-        {'human': 2000, 'Wood': 8000, 'Sand': 8000, 'Steel': 4000, 'Money': 50000}
+        {'human': 2500, 'Wood': 2000, 'Sand': 2000, 'Steel': 500, 'Money': 10000},
+        {'human': 2000, 'Wood': 5000, 'Sand': 5000, 'Steel': 1250, 'Money': 25000}
       ],
+      'mortgageValue': [25000, 60000],
       'maxHuman': 1000,
       'img': 'Assets/building/quarry.jpg'
     },
     'Steel': {
       'rate': {
-        'base': 1.5,
-        'upgrade': 0.75
+        'base': 2.0,
+        'upgrade': 1.5
       },
+      'step': 10,
       'input':{
         'Money': 15.0
       },
       'upgrade' : [
-        {'human': 2500, 'Wood': 5000, 'Sand': 5000, 'Steel': 2000, 'Money': 37500},
-        {'human': 2000, 'Wood': 8000, 'Sand': 8000, 'Steel': 4000, 'Money': 55000}
+        {'human': 2500, 'Wood': 3000, 'Sand': 3000, 'Steel': 750, 'Money': 22500},
+        {'human': 2000, 'Wood': 7500, 'Sand': 7500, 'Steel': 1875, 'Money': 40000}
       ],
+      'mortgageValue': [45000, 90000],
       'maxHuman': 1000,
       'img': 'Assets/building/Steel.jpg'
     },
@@ -154,103 +183,117 @@ class Master{
         'base': 3.0,
         'upgrade': 1.5
       },
+      'step': 10,
       'input':{
         'Money': 5.0
       },
       'upgrade' : [
-        {'human': 2500, 'Wood': 4000, 'Sand': 4000, 'Steel': 800, 'Money': 20000},
-        {'human': 2000, 'Wood': 8000, 'Sand': 8000, 'Steel': 1500, 'Money': 45000}
+        {'human': 2500, 'Wood': 2000, 'Sand': 2000, 'Steel': 500, 'Money': 12000},
+        {'human': 2000, 'Wood': 5000, 'Sand': 5000, 'Steel': 1250, 'Money': 35000}
       ],
+      'mortgageValue': [27000, 70000],
       'maxHuman': 1000,
       'img': 'Assets/building/Rubber.jpg'
     },
     'Cotton': {
       'rate': {
-        'base': 8.5,
+        'base': 10.0,
         'upgrade': 4.25
       },
+      'step': 20,
       'input':{
         'Money': 7.5
       },
       'upgrade' : [
-        {'human': 2500, 'Wood': 3500, 'Sand': 3500, 'Steel': 800, 'Money': 30000},
-        {'human': 2000, 'Wood': 8000, 'Sand': 8000, 'Steel': 1500, 'Money': 60000}
+        {'human': 2500, 'Wood': 2000, 'Sand': 2000, 'Steel': 350, 'Money': 25000},
+        {'human': 2000, 'Wood': 5000, 'Sand': 5000, 'Steel': 1250, 'Money': 40000}
       ],
+      'mortgageValue': [30000, 50000],
       'maxHuman': 1000,
       'img': 'Assets/building/Cotton.jpg'
     },
-    'Petrol': {
+    'Oil': {
       'rate': {
         'base': 5.0,
-        'upgrade': 2.5
+        'upgrade': 1.2
       },
+      'step': 5,
       'input':{
-        'Money': 500.0
+        'Money': 12.0
       },
       'upgrade' : [
-        {'human': 2500, 'Wood': 3500, 'Sand': 3500, 'Steel': 800, 'Money': 30000},
-        {'human': 2000, 'Wood': 8000, 'Sand': 8000, 'Steel': 1500, 'Money': 60000, 'R&D': 1}
+        {'human': 2500, 'Wood': 2000, 'Sand': 2000, 'Steel': 3500, 'Money': 30000},
+        {'human': 2000, 'Wood': 7500, 'Sand': 7500, 'Steel': 8750, 'Money': 50000}
       ],
-      'maxHuman': 1000,
-      'img': 'Assets/building/Petrol.jpg'
+      'mortgageValue': [75000, 160000],
+      'maxHuman': 100,
+      'img': 'Assets/building/Oil.jpg'
     },
     'Leather': {
       'rate': {
         'base': 1.5,
         'upgrade': 1.0
       },
+      'step': 10,
       'input':{
         'Money': 12.0
       },
       'upgrade' : [
-        {'human': 2500, 'Wood': 4000, 'Sand': 4000, 'Steel': 2500, 'Money': 30000},
-        {'human': 2000, 'Wood': 8000, 'Sand': 8000, 'Steel': 5000, 'Money': 75000}
+        {'human': 2500, 'Wood': 3000, 'Sand': 3000, 'Steel': 500, 'Money': 12000},
+        {'human': 2000, 'Wood': 7500, 'Sand': 7500, 'Steel': 1250, 'Money': 30000}
       ],
+      'mortgageValue': [30000, 75000],
       'maxHuman': 1000,
       'img': 'Assets/building/Leather.jpg'
     },
     'Copper': {
       'rate': {
-        'base': 1.3,
-        'upgrade': 1.3
+        'base': 1.5,
+        'upgrade': 0.5
       },
+      'step': 10,
       'input':{
         'Money': 20.0
       },
       'upgrade' : [
-        {'human': 2500, 'Wood': 5000, 'Sand': 5000, 'Steel': 3500, 'Money': 55000},
-        {'human': 2500, 'Wood': 11000, 'Sand': 11000, 'Steel': 8000, 'Money': 130000}
+        {'human': 2500, 'Wood': 3000, 'Sand': 2000, 'Steel': 2000, 'Money': 20000},
+        {'human': 2500, 'Wood': 7500, 'Sand': 5000, 'Steel': 1250, 'Money': 40000}
       ],
+      'mortgageValue': [50000, 85000],
       'maxHuman': 1000,
       'img': 'Assets/building/Copper.jpg'
     },
     'Silver': {
       'rate': {
         'base': 0.5,
-        'upgrade': 0.5
+        'upgrade': 0.2
       },
+      'step': 10,
       'input':{
-        'Money': 50.0
+        'Money': 20.0
       },
       'upgrade' : [
-        {'human': 2500, 'Wood': 10000, 'Sand': 10000, 'Steel': 5000, 'Money': 200000},
-        {'human': 2000, 'Wood': 12500, 'Sand': 12500, 'Steel': 8000, 'Money': 350000, 'R&D': 1}
+        {'human': 2500, 'Wood': 2000, 'Sand': 2000, 'Steel': 1500, 'Money': 30000},
+        {'human': 2000, 'Wood': 5000, 'Sand': 5000, 'Steel': 3750, 'Money': 50000}
       ],
+      'mortgageValue': [60000, 110000],
       'maxHuman': 1000,
       'img': 'Assets/building/Silver.jpg'
     },
     'Vegetable': {
       'rate': {
         'base': 3,
-        'upgrade': 0.6
+        'upgrade': 1.0
       },
+      'step': 10,
       'input':{
         'Money': 5.0
       },
       'upgrade' : [
-        {'human': 2500, 'Wood': 3000, 'Sand': 3000, 'Steel': 1500, 'Money': 25000},
-        {'human': 2000, 'Wood': 8000, 'Sand': 8000, 'Steel': 4000, 'Money': 50000}
+        {'human': 2500, 'Wood': 2000, 'Sand': 4000, 'Steel': 500, 'Money': 10000},
+        {'human': 2000, 'Wood': 5000, 'Sand': 10000, 'Steel': 1250, 'Money': 25000}
       ],
+      'mortgageValue': [30000, 70000],
       'maxHuman': 1000,
       'img': 'Assets/building/agriculture.jpg'
     },
@@ -259,13 +302,15 @@ class Master{
         'base': 3,
         'upgrade': 0.9
       },
+      'step': 10,
       'input':{
         'Money': 8.5
       },
       'upgrade' : [
-        {'human': 2500, 'Wood': 4500, 'Sand': 4500, 'Steel': 2500, 'Money': 35000},
-        {'human': 2000, 'Wood': 8000, 'Sand': 8000, 'Steel': 6000, 'Money': 65000}
+        {'human': 2500, 'Wood': 2000, 'Sand': 4000, 'Steel': 500, 'Money': 15000},
+        {'human': 2000, 'Wood': 5000, 'Sand': 10000, 'Steel': 1250, 'Money': 35000}
       ],
+      'mortgageValue': [33000, 80000],
       'maxHuman': 1000,
       'img': 'Assets/building/Meat.jpg'
     },
@@ -286,36 +331,39 @@ class Master{
     },*/
     'Car': {
       'rate': {
-        'base': 2,
+        'base': 0.22,
         'upgrade': 0
       },
+      'step': 50,
       'input':{
-        'Money': 16.0,
-        'Steel': 2.0,
-        'Sand': 4.0,
-        'Rubber': 3.0
+        'Money': 750.0,
+        'Steel': 20.0,
+        'Sand': 50.0,
+        'Rubber': 60.0,
+        'Copper': 10.0
       },
       'upgrade' : [
-        {'human': 2500, 'Wood': 1200, 'Sand': 1500, 'Money': 4000000},
-        {'human': 2000, 'Wood': 1000, 'Sand': 1200, 'Money': 3000000, 'R&D': 1}
+        {'human': 2500, 'Wood': 6000, 'Sand': 6000, 'Steel': 6000, 'Money': 100000, 'Education': 3}
       ],
+      'mortgageValue': [190000],
       'maxHuman': 500,
       'img': 'Assets/building/Car.jpg'
     },
     'Shirt': {
       'rate': {
-        'base': 25,
+        'base': 3.3,
         'upgrade': 0
       },
+      'step': 10,
       'input':{
-        'Money': 8.0,
-        'Cotton': 50.0
+        'Money': 40.0,
+        'Cotton': 40.0
       },
       'upgrade' : [
-        {'human': 2500, 'Steel': 1200, 'Sand': 1500, 'Money': 2500000},
-        {'human': 2000, 'Steel': 1000, 'Sand': 1200, 'Money': 2000000, 'R&D': 1}
+        {'human': 2500, 'Wood': 2000, 'Sand': 2000, 'Steel': 500, 'Money': 40000, 'Education': 1}
       ],
-      'maxHuman': 500,
+      'mortgageValue': [60000],
+      'maxHuman': 1000,
       'img': 'Assets/building/Shirt.jpg'
     },
     /*'food': {
@@ -325,8 +373,8 @@ class Master{
       },
       'input':{
         'money': 10.5,
-        /*'vege': 7.5,
-        'meat': 6.0,*/
+        'vege': 7.5,
+        'meat': 6.0,
         'rawFood': 10.0,
         'oil': 16,
         'rubber': 1.8
@@ -338,194 +386,209 @@ class Master{
       'maxHuman': 500,
       'img': 'Assets/logging.jpg'
     },*/
-    'FoodVegetable': {
+    'Processed Vegetable': {
       'rate': {
-        'base': 16,
+        'base': 9.6,
         'upgrade': 0
       },
+      'step': 10,
       'input':{
-        'Money': 10.5,
-        'Vegetable': 7.5,
-        //'rawFood': 10.0,
-        'Petrol': 16.0,
-        'Rubber': 1.8
+        'Money': 35.0,
+        'Vegetable': 20.0,
+        'Oil': 1.0,
+        'Rubber': 5.0
       },
       'upgrade' : [
-        {'human': 2500, 'Steel': 1200, 'Sand': 1500, 'Money': 2500000},
-        {'human': 2000, 'Steel': 1000, 'Sand': 1200, 'Money': 2000000}
+        {'human': 2500, 'Wood': 3000, 'Sand': 3000, 'Steel': 1000, 'Money': 45000, 'Education': 1}
       ],
+      'mortgageValue': [70000],
       'maxHuman': 500,
       'img': 'Assets/building/FoodVege.jpg'
     },
-    'FoodMeat': {
+    'Processed Meat': {
       'rate': {
-        'base': 16,
+        'base': 10,
         'upgrade': 0
       },
+      'step': 10,
       'input':{
-        'Money': 10.5,
-        'Meat': 6.0,
-        //'rawFood': 10.0,
-        'Petrol': 16.0,
-        'Rubber': 1.8
+        'Money': 50.0,
+        'Meat': 20.0,
+        'Oil': 1.0,
+        'Rubber': 5.0
       },
       'upgrade' : [
-        {'human': 2500, 'Steel': 1200, 'Sand': 1500, 'Money': 2500000},
-        {'human': 2000, 'Steel': 1000, 'Sand': 1200, 'Money': 2000000}
+        {'human': 2500, 'Wood': 3000, 'Sand': 3000, 'Steel': 1000, 'Money': 60000, 'Education': 1}
       ],
+      'mortgageValue': [80000],
       'maxHuman': 500,
       'img': 'Assets/building/FoodMeat.jpg'
     },
-    'HouseholdAppliances': {
+    'Solar Panel': {
       'rate': {
-        'base': 4,
+        'base': 0.875,//  7/8 step 8
         'upgrade': 0
       },
+      'step': 8,
       'input':{
-        'Money': 12.0,
-        'Steel': 2.0,
-        'Rubber': 4.0,
-        'Cooper': 1.0,
+        'Money': 1850.0,
+        'Sand': 30.0,
+        'Steel': 20.0,
+        'Rubber': 20.0,
       },
       'upgrade' : [
-        {'human': 2500, 'Steel': 1200, 'Sand': 1500, 'Money': 2000000},
-        {'human': 2000, 'Steel': 1000, 'Sand': 1200, 'Money': 2500000, 'R&D': 1}
+        {'human': 2500, 'Wood': 8000, 'Sand': 8000, 'Steel': 5000, 'Money': 120000, 'Education': 3}
       ],
-      'maxHuman': 500,
-      'img': 'Assets/building/HouseholdAppliances.jpg'
+      'mortgageValue': [210000],
+      'maxHuman': 480,
+      'img': 'Assets/building/SolarPanel.jpg'
     },
     'Furniture': {
       'rate': {
-        'base': 3,
+        'base': 1.5,
         'upgrade': 0
       },
+      'step': 10,
       'input':{
-        'Money': 12.0,
-        'Cotton': 24.0,
-        'Steel': 2.0,
-        'Wood': 2.4
+        'Money': 78.0,
+        'Cotton': 30.0,
+        'Steel': 8.0,
+        'Wood': 28.0
       },
       'upgrade' : [
-        {'human': 2500, 'Steel': 1200, 'Sand': 1500, 'Money': 2500000},
-        {'human': 2000, 'Steel': 1000, 'Sand': 1200, 'Money': 2000000, 'R&D': 1}
+        {'human': 2500, 'Wood': 5000, 'Sand': 5000, 'Steel': 2000, 'Money': 70000, 'Education': 2}
       ],
-      'maxHuman': 500,
+      'mortgageValue': [120000],
+      'maxHuman': 800,
       'img': 'Assets/building/Furniture.jpg'
     },
     'Jewellery': {
       'rate': {
-        'base': 0.6,
+        'base': 0.75,
         'upgrade': 0
       },
+      'step': 4,
       'input':{
-        'Money': 8.0,
-        'Silver': 0.8
+        'Money': 370.0,
+        'Silver': 7.0,
+        'Steel': 5.0
       },
       'upgrade' : [
-        {'human': 2500, 'Steel': 1200, 'Sand': 1500, 'Money': 3500000},
-        {'human': 2000, 'Steel': 1000, 'Sand': 1200, 'Money': 3000000, 'R&D': 1}
+        {'human': 2500, 'Wood': 2000, 'Sand': 2000, 'Steel': 5000, 'Money': 90000, 'Education': 3}
       ],
-      'maxHuman': 1000,
+      'mortgageValue': [150000],
+      'maxHuman': 380,
       'img': 'Assets/building/Jewellery.jpg'
     },
     'Gloves': {
       'rate': {
-        'base': 1,
+        'base': 6,
         'upgrade': 0
       },
+      'step': 10,
       'input':{
-        'Money': 6.25,
-        'Rubber': 14.0/8,
+        'Money': 32.0,
+        'Rubber': 25.0,
       },
       'upgrade' : [
-        {'human': 2500, 'Steel': 1200, 'Sand': 1500, 'Money': 2500000},
-        {'human': 2000, 'Steel': 1000, 'Sand': 1200, 'Money': 2000000, 'R&D': 1}
+        {'human': 2500, 'Wood': 6000, 'Sand': 6000, 'Steel': 1500, 'Money': 60000, 'Education': 1}
       ],
+      'mortgageValue': [100000],
       'maxHuman': 800,
       'img': 'Assets/building/Gloves.jpg'
     },
     'Bag': {
       'rate': {
-        'base': 1.5,
+        'base': 3.08, // step 25
         'upgrade': 0
       },
+      'step': 25,
       'input':{
-        'Money': 6.875,
-        'Cotton': 10.0,
-        'Leather': 1.25
+        'Money': 90.0,
+        'Cotton': 40.0,
+        'Leather': 20.0
       },
       'upgrade': [
-        {'human': 2500, 'Steel': 1200, 'Sand': 1500, 'Money': 2300000},
-        {'human': 2000, 'Steel': 1000, 'Sand': 1200, 'Money': 1800000, 'R&D': 1}
+        {'human': 2500, 'Wood': 6000, 'Sand': 6000, 'Steel': 2000, 'Money': 60000, 'Education': 1}
       ],
-      'maxHuman': 800,
+      'mortgageValue': [100000],
+      'maxHuman': 650,
       'img': 'Assets/building/Bag.jpg'
     },
     'Gadget': {
       'rate': {
-        'base': 2,
+        'base': 80.0/75.0, // step 15
         'upgrade': 0
       },
+      'step': 15,
       'input':{
-        'Money': 7.0,
-        'Steel': 2.0,
-        'Copper': 1.5,
-        'Sand': 1.5
+        'Money': 820.0,
+        'Steel': 10.0,
+        'Copper': 10.0,
+        'Sand': 15.0
       },
       'upgrade': [
-        {'human': 2500, 'Steel': 1200, 'Sand': 1500, 'Money': 3500000},
-        {'human': 2000, 'Steel': 1000, 'Sand': 1200, 'Money': 2500000, 'R&D': 1}
+        {'human': 2500, 'Wood': 2000, 'Sand': 2000, 'Steel': 6000, 'Money': 45000, 'Education': 2}
       ],
-      'maxHuman': 1000,
+      'mortgageValue': [120000],
+      'maxHuman': 750,
       'img': 'Assets/building/Gadget.jpg'
     },
     'Book': {
       'rate': {
-        'base': 3,
+        'base': 2.75, // step 4
         'upgrade': 0
       },
+      'step': 8,
       'input':{
-        'Money': 40.0/7,
-        'Wood': 12.0/7,
+        'Money': 10.0,
+        'Wood': 20.0,
       },
       'upgrade' : [
-        {'human': 2500, 'Steel': 1200, 'Sand': 1500, 'Money': 2500000},
-        {'human': 2000, 'Steel': 1000, 'Sand': 1200, 'Money': 1500000, 'R&D': 1}
+        {'human': 2500, 'Wood': 3000, 'Sand': 1500, 'Steel': 500, 'Money': 40000, 'Education': 1}
       ],
-      'maxHuman': 700,
+      'mortgageValue': [60000],
+      'maxHuman': 1000,
       'img': 'Assets/building/Book.jpg'
     }
+  };
+
+  dynamic landDevelopment = {
+    'human': 1000,
+    'Money': 40000
   };
 
   dynamic specialBuilding = {
     'Education': {
       'upgrade' : [
-        {'human': 2500, 'Steel': 1200, 'Sand': 1500, 'Money': 2500000},
-        {'human': 2000, 'Steel': 1000, 'Sand': 1200, 'Money': 1500000}
+        {'human': 1000, 'Money': 75000, 'Land': 1},
+        {'human': 1500, 'Money': 100000, 'Land': 2},
+        {'human': 2000, 'Money': 125000, 'Land': 3}
       ],
       'img': 'Assets/specialBuilding/education.jpg',
       'description': ''
     },
     'Healthcare': {
       'upgrade' : [
-        {'human': 2500, 'Steel': 1200, 'Sand': 1500, 'Money': 2500000},
-        {'human': 2000, 'Steel': 1000, 'Sand': 1200, 'Money': 1500000, 'R&D': 1}
+        {'human': 1000, 'Money': 75000, 'Land': 1},
+        {'human': 1500, 'Money': 100000, 'Land': 2},
+        {'human': 2000, 'Money': 125000, 'Land': 3}
       ],
       'img': 'Assets/specialBuilding/healthcare.jpg',
       'description': ''
     },
-    'R&D': {
-      'upgrade' : [
-        {'human': 2500, 'Steel': 1200, 'Sand': 1500, 'Money': 2500000, 'Education': 1},
-        {'human': 2000, 'Steel': 1000, 'Sand': 1200, 'Money': 1500000, 'R&D': 1}
-      ],
-      'img': 'Assets/specialBuilding/r&d.jpg',
-      'description': ''
-    },
+//    'R&D': {
+//      'upgrade' : [
+//        {'human': 2500, 'Steel': 0, 'Sand': 0, 'Money': 25000, 'Education': 1},
+//        {'human': 2000, 'Steel': 0, 'Sand': 0, 'Money': 15000, 'R&D': 1}
+//      ],
+//      'img': 'Assets/specialBuilding/r&d.jpg',
+//      'description': ''
+//    },
     'Telecommunication': {
       'upgrade' : [
-        {'human': 2500, 'Steel': 1200, 'Sand': 1500, 'Money': 2500000},
-        {'human': 2000, 'Steel': 1000, 'Sand': 1200, 'Money': 1500000, 'R&D': 1}
+        {'human': 1500, 'Money': 75000, 'Land': 1},
+        {'human': 2500, 'Money': 100000, 'Land': 2}
       ],
       'img': 'Assets/specialBuilding/telecommunication.jpg',
       'description': ''

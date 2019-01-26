@@ -1,16 +1,30 @@
 import 'package:e_nation/Logic/Master.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 
 import 'dart:math';
 import 'dart:async';
+import 'dart:io';
 
 class HistoryData{
   List<dynamic> GDP = new List<dynamic>();
   Map<dynamic, dynamic> trade = {};
   Map<dynamic, dynamic> news = {};
+  Map<dynamic, dynamic> loan = {};
 }
 
+enum NotifyType{
+  trade,
+  info
+}
+
+class Notify{
+  Notify({this.dataSnapshot, this.type});
+
+  DataSnapshot dataSnapshot;
+  NotifyType type;
+}
 
 class Nation{
   Nation({this.name, this.human});
@@ -18,7 +32,9 @@ class Nation{
   FirebaseDatabase database = FirebaseDatabase.instance;
   bool created;
   int session = 0;
+  bool sessionPart = false; // false mean first half, true mean second half
   String name;
+  String imageUrl;
   int human;
   int humanAvailable = 0;
   int land = 0;
@@ -46,14 +62,26 @@ class Nation{
   final StreamController<bool> _newsRefresh = StreamController<bool>();
   Stream<bool> get newsRefresh => _newsRefresh.stream;
 
+  final StreamController<bool> _loanDataRefresh = StreamController<bool>();
+  Stream<bool> get loanDataRefresh => _loanDataRefresh.stream;
+
+  final StreamController<bool> _FABRefresh = StreamController<bool>();
+  Stream<bool> get FABRefresh => _FABRefresh.stream;//waiting for connection && loading
+
+  final StreamController<Notify> _FABNotification = StreamController<Notify>();
+  Stream<Notify> get FABNotification => _FABNotification.stream;
+
+  final StreamController<bool> _telecom = StreamController<bool>();
+  Stream<bool> get telecom => _telecom.stream;
+
   Map<dynamic, dynamic> resources = {
-    'Money': 3000000,
-    'Wood': 500,
-    'Sand': 500,
-    'Steel': 500,
+    'Money': 0,
+    'Wood': 0,
+    'Sand': 0,
+    'Steel': 0,
     'Rubber': 0,
     'Cotton': 0,
-    'Petrol': 0,
+    'Oil': 0,
     'Leather': 0,
     'Copper': 0,
     'Silver': 0,
@@ -62,9 +90,9 @@ class Nation{
     //'rawFood': 0,
     'Car': 0,
     'Shirt': 0,
-    'FoodVegetable': 0,
-    'FoodMeat': 0,
-    'HouseholdAppliances': 0,
+    'Processed Vegetable': 0,
+    'Processed Meat': 0,
+    'Solar Panel': 0,
     'Furniture': 0,
     'Jewellery': 0,
     'Gloves': 0,
@@ -78,7 +106,7 @@ class Nation{
     'Steel': [{'level': 0, 'input': {'human': 0, 'Money': 0}, 'upgrade': false}],
     'Rubber': [{'level': 0, 'input': {'human': 0, 'Money': 0}, 'upgrade': false}],
     'Cotton': [{'level': 0, 'input': {'human': 0, 'Money': 0}, 'upgrade': false}],
-    'Petrol': [{'level': 0, 'input': {'human': 0, 'Money': 0}, 'upgrade': false}],
+    'Oil': [{'level': 0, 'input': {'human': 0, 'Money': 0}, 'upgrade': false}],
     'Leather': [{'level': 0, 'input': {'human': 0, 'Money': 0}, 'upgrade': false}],
     'Copper': [{'level': 0, 'input': {'human': 0, 'Money': 0}, 'upgrade': false}],
     'Silver': [{'level': 0, 'input': {'human': 0, 'Money': 0}, 'upgrade': false}],
@@ -86,9 +114,9 @@ class Nation{
     'Meat': [{'level': 0, 'input': {'human': 0, 'Money': 0}, 'upgrade': false}],
     'Car': [],
     'Shirt': [],
-    'FoodVegetable': [],
-    'FoodMeat': [],
-    'HouseholdAppliances': [],
+    'Processed Vegetable': [],
+    'Processed Meat': [],
+    'Solar Panel': [],
     'Furniture': [],
     'Jewellery': [],
     'Gloves': [],
@@ -97,7 +125,7 @@ class Nation{
     'Book': [],
   };
 
-  var specialBuilding = {
+  Map<dynamic, dynamic> specialBuilding = {
     'Education': {'level': 0, 'upgrade': false},
     'R&D': {'level': 0, 'upgrade': false},
     'Telecommunication': {'level': 0, 'upgrade': false},
@@ -109,6 +137,8 @@ class Nation{
     //'Sand': 100,
     //'Steel': 100
   };
+
+  Map<dynamic, dynamic> minD = {}; //minimum Demand to maintain happiness
 
   Map<dynamic, dynamic> comsumptionSupply = {};
 
@@ -128,8 +158,22 @@ class Nation{
   }
 
   void addFirebaseListener(){
+    DatabaseReference loading = FirebaseDatabase.instance.reference().child('loading');
+    loading.onValue.listen((Event event){
+      if(event.snapshot.value){
+        this.pauseFire();
+        _FABRefresh.add(false);
+      }else{
+        this.resumeFire();
+        _FABRefresh.add(true);
+      }
+    });
     FirebaseDatabase.instance.reference().child('session').onValue.listen((Event event){
       session = event.snapshot.value;
+      _homeRefresh.add(true);
+    });
+    FirebaseDatabase.instance.reference().child('sessionPart').onValue.listen((Event event){
+      sessionPart = event.snapshot.value;
       _homeRefresh.add(true);
     });
     DatabaseReference data = FirebaseDatabase.instance.reference().child('users/${currentUser.uid}');
@@ -158,14 +202,17 @@ class Nation{
     fireListeners.add(data.child('human').onValue.listen((Event event){
       human = event.snapshot.value;
       _homeRefresh.add(true);
+      _FABRefresh.add(true);
     }));
     fireListeners.add(data.child('landAvailable').onValue.listen((Event event){
       landAvailable = event.snapshot.value;
       _homeRefresh.add(true);
+      _governRefresh.add(true);
     }));
     fireListeners.add(data.child('land').onValue.listen((Event event){
       land = event.snapshot.value;
       _homeRefresh.add(true);
+      _governRefresh.add(true);
     }));
     fireListeners.add(data.child('buildList').onChildAdded.listen((Event event){
       buildList[event.snapshot.key] = event.snapshot.value;
@@ -173,6 +220,10 @@ class Nation{
     }));
     fireListeners.add(data.child('buildList').onChildChanged.listen((Event event){
       buildList[event.snapshot.key] = event.snapshot.value;
+      _homeRefresh.add(true);
+    }));
+    fireListeners.add(data.child('buildList').onChildRemoved.listen((Event event){
+      buildList.remove(event.snapshot.key);
       _homeRefresh.add(true);
     }));
     fireListeners.add(data.child('comsumption/supply').onChildAdded.listen((Event event){
@@ -203,15 +254,46 @@ class Nation{
       historyData.GDP = event.snapshot.value?? historyData.GDP;
       _statRefresh.add(true);
     }));
-    fireListeners.add(data.child('historyData/trade').onValue.listen((Event event){
-      historyData.trade = event.snapshot.value?? historyData.trade;
-      print('trade added ' + event.snapshot.value.toString());
+    fireListeners.add(data.child('comsumption/minD').onChildAdded.listen((Event event){
+      minD[event.snapshot.key] = event.snapshot.value;
+      _homeRefresh.add(true);
+    }));
+    fireListeners.add(data.child('comsumption/minD').onChildChanged.listen((Event event){
+      minD[event.snapshot.key] = event.snapshot.value;
+      _homeRefresh.add(true);
+    }));
+    fireListeners.add(data.child('comsumption/minD').onChildRemoved.listen((Event event){
+      minD.remove(event.snapshot.key);
+      _homeRefresh.add(true);
+    }));
+    fireListeners.add(data.child('historyData/trade').onChildAdded.listen((Event event){
+      historyData.trade[event.snapshot.key] = event.snapshot.value;
       _tradeHistoryRefresh.add(true);
+      //print('get trade ${event.snapshot.value? 'read':'not read'}');
+      if(!event.snapshot.value){
+        FirebaseDatabase.instance.reference().child('tradeHistory/${event.snapshot.key}').once().then((DataSnapshot snapshot){
+          //print('send trade ${snapshot.key}');
+          _FABNotification.add(new Notify(dataSnapshot: snapshot, type: NotifyType.trade));
+        });
+      }
     }));
     fireListeners.add(data.child('historyData/news').onValue.listen((Event event){
       historyData.news = event.snapshot.value?? historyData.trade;
-      print('trade added ' + event.snapshot.value.toString());
+      //print('trade added ' + event.snapshot.value.toString());
       _newsRefresh.add(true);
+    }));
+    fireListeners.add(data.child('historyData/loan').onChildAdded.listen((Event event){
+      historyData.loan[event.snapshot.key] = event.snapshot.value;
+      _loanDataRefresh.add(true);
+    }));
+    fireListeners.add(data.child('historyData/loan').onChildRemoved.listen((Event event){
+      historyData.loan.remove(event.snapshot.key);
+      _loanDataRefresh.add(true);
+    }));
+    fireListeners.add(data.child('specialBuilding').onValue.listen((Event event){
+      specialBuilding = event.snapshot.value?? specialBuilding;
+      _governRefresh.add(true);
+      _telecom.add(true);
     }));
 //    DatabaseReference history = FirebaseDatabase.instance.reference().child('historyData/${currentUser.uid}');
 //    fireListeners.add(history.child('GDP').onValue.listen((Event event){
@@ -275,16 +357,33 @@ class Nation{
     comsumptionDemand['Wood'] = (human*0.1).toInt();
   }
 
-  bool assignResources(String resource, int factory, int human){
+  String assignResources(String resource, int factory, int human){
     Map<String, double> factoryInput = master.building[resource]['input'];//input statistic
     Map<dynamic, dynamic> input = this.building[resource][factory]['input'];//what have been input
     assert(this.humanAvailable + input['human'] >= human, 'Human not enough');
+    //print(this.humanAvailable + input['human'] >= human);
+    if(!(this.humanAvailable + input['human'] >= human)){
+      return 'Human not enough';
+    }
+    String r = '';
     factoryInput.forEach((key, value){
-      if(input.containsKey(key))
-        assert(this.resources[key] + input[key] >= value * human, '$key not enough');
-      else
-        assert(this.resources[key] >= value * human, '$key not enough');
+      if(input.containsKey(key)) {
+        //assert(this.resources[key] + input[key] >= value * human, '$key not enough');
+        if(!(this.resources[key] + input[key] >= value * human)){
+          r = '$key not enough';
+          return '$key not enough';
+        }
+      }else {
+        //assert(this.resources[key] >= value * human, '$key not enough');
+        if(!(this.resources[key] >= value * human)){
+          r = '$key not enough';
+          return '$key not enough';
+        }
+      }
     });
+    if(r.length > 0){
+      return r;
+    }
     //if all enough
     //this.humanAvailable += input['human'] - human;
     _resourcesWrite('humanAvailable', (input['human'] - human));
@@ -299,7 +398,7 @@ class Nation{
       input[key] = (value * human).toInt();
     });
     _buildingWrite(resource, this.building[resource]);
-    return true;
+    return 'assign';
   }
 
   String upgradeBuilding(String resource, int factory){
@@ -378,6 +477,11 @@ class Nation{
     if(landAvailable >= land){
       return 'No enough land, you need to develop new land for this construction';
     }
+    if(upgrade.containsKey('Education')){
+      if(specialBuilding['Education']['level'] < upgrade['Education']){
+        return 'Education level need to be level ${upgrade['Education']} or above';
+      }
+    }
     upgrade.forEach((key, value){
       if(key == 'human')
         //humanAvailable -= upgrade['human'];
@@ -435,7 +539,7 @@ class Nation{
       if(key == 'human')
         //humanAvailable -= upgrade['human'];
         _resourcesWrite('humanAvailable', -upgrade['human']);
-      else
+      else if(key == 'Money')
         //this.resources[key] -= upgrade[key];
         _resourcesWrite('resources/${key}', -upgrade[key]);
     });
@@ -451,7 +555,7 @@ class Nation{
       if(key == 'human')
         //humanAvailable += upgrade['human'];
         _resourcesWrite('humanAvailable', upgrade['human']);
-      else
+      else if(key == 'Money')
         //this.resources[key] += upgrade[key];
         _resourcesWrite('resources/${key}', (upgrade[key] * 0.8).toInt());
     });
@@ -502,23 +606,42 @@ class Nation{
     //_developL(false)
   }
 
+  Future<String> repayment(double amount, String id, bool full, String transactionID) async {
+    if(amount > resources['Money']){
+      return 'Not enough money for repayment';
+    }
+    bool getMoney = await _resourcesWrite('resources/Money', (-amount).toInt());
+    if(getMoney){
+      TransactionResult transactionResult = await FirebaseDatabase.instance.reference().child('loan/pay/${transactionID}').runTransaction((MutableData mutableData) async {
+        mutableData.value = {};
+        mutableData.value['loanID'] = id;
+        mutableData.value['full'] = full;
+        mutableData.value['amount'] = amount;
+        return mutableData;
+      });
+      return transactionResult.committed? 'Sending':'Error in sending';
+    }
+    return 'Error in getting money';
+  }
+
   //FIREBASE FUNCTION//
   Future<void> _resourcesBuild(String resource, bool build) async {
     DatabaseReference _resource = FirebaseDatabase.instance.reference().child('users/${currentUser.uid}/buildList/${resource}');
     final TransactionResult transactionResult =
     await _resource.runTransaction((MutableData mutableData) async {
-      print('This is ${await mutableData.value}');
+      //print('${resource} This is ${await mutableData.value}');
       mutableData.value = build;
-      print('Now is ${mutableData.value}');
+      //print('${resource} Now is ${mutableData.value}');
       return mutableData;
     });
     final TransactionResult usedLand = await FirebaseDatabase.instance.reference().child('users/${currentUser.uid}/landAvailable').runTransaction((MutableData mutableData) async {
-      mutableData.value = (mutableData.value ?? this.landAvailable) + build? 1:-1;
+      mutableData.value = (mutableData.value ?? this.landAvailable) + (build? 1:-1);
+      print('land Updated == '+ mutableData.value.toString());
       return mutableData;
     });
 
     if (transactionResult.committed && usedLand.committed) {
-      print('success');
+      //print('success');
     } else {
       print('Transaction not committed.');
       if (transactionResult.error != null) {
@@ -527,38 +650,39 @@ class Nation{
     }
   }
 
-  Future<void> _resourcesWrite(String resource, int amount) async {
+  Future<bool> _resourcesWrite(String resource, int amount) async {
     DatabaseReference _resource = FirebaseDatabase.instance.reference().child('users/${currentUser.uid}/${resource}');
     final TransactionResult transactionResult =
     await _resource.runTransaction((MutableData mutableData) async {
-      print('This is ${await mutableData.value}');
+      //print('This is ${await mutableData.value}');
       mutableData.value = (mutableData.value ?? this.resources[resource]) + amount;
-      print('Now is ${mutableData.value}');
+      //print('Now is ${mutableData.value}');
       return mutableData;
     });
 
     if (transactionResult.committed) {
-      print('success');
+      //print('success');
     } else {
       print('Transaction not committed.');
       if (transactionResult.error != null) {
         print(transactionResult.error.message);
       }
     }
+    return transactionResult.committed;
   }
 
   Future<void> _buildingWrite(String resource, dynamic input) async {
     DatabaseReference _resource = FirebaseDatabase.instance.reference().child('users/${currentUser.uid}/building/${resource}');
     final TransactionResult transactionResult =
     await _resource.runTransaction((MutableData mutableData) async {
-      print('This is ${await mutableData.value}');
+      //print('This is ${await mutableData.value}');
       mutableData.value = input;
-      print('Now is ${mutableData.value}');
+      //print('Now is ${mutableData.value}');
       return mutableData;
     });
 
     if (transactionResult.committed) {
-      print('success');
+      //print('success');
     } else {
       print('Transaction not committed.');
       if (transactionResult.error != null) {
@@ -576,7 +700,7 @@ class Nation{
     });
 
     if (transactionResult.committed) {
-      print('success');
+      //print('success');
     } else {
       print('Transaction not committed.');
       if (transactionResult.error != null) {
@@ -589,14 +713,14 @@ class Nation{
     DatabaseReference _resource = FirebaseDatabase.instance.reference().child('users/${currentUser.uid}/comsumption/supply/${resource}');
     final TransactionResult transactionResult =
     await _resource.runTransaction((MutableData mutableData) async {
-      print('This is ${await mutableData.value}');
+      //print('This is ${await mutableData.value}');
       mutableData.value = input;
-      print('Now is ${mutableData.value}');
+      //print('Now is ${mutableData.value}');
       return mutableData;
     });
 
     if (transactionResult.committed) {
-      print('success');
+      //print('success');
     } else {
       print('Transaction not committed.');
       if (transactionResult.error != null) {
@@ -626,29 +750,36 @@ class Nation{
         }
         return mutableData;
       });
+      while(!(await resourceChange.committed)){
+        print('resourceChange recommit');
+        resourceChange = await _user.child('resources').runTransaction((MutableData mutableData) async {
+          if(mutableData.value != null) {
+            mutableData.value['Money'] -= quantity * price;
+          }
+          return mutableData;
+        });
+      }
       TransactionResult tradepoolChange = await _user.child('tradepool').runTransaction((MutableData mutableData) async {
-        if(mutableData.value == null) {
-          mutableData.value = {};
-          mutableData.value['Money'] = quantity * price;
-        }else {
-          mutableData.value['Money'] += quantity * price;
+        if(mutableData.value != null){
+          if(mutableData.value['Money'] == null)
+            mutableData.value['Money'] = quantity * price;
+          else
+            mutableData.value['Money'] += quantity * price;
         }
         return mutableData;
       });
-//      TransactionResult userChange = await _user.runTransaction((MutableData mutableData) async {
-//        if(mutableData.value != null){
-//          print(mutableData.value);
-//          mutableData.value['resources']['Money'] -= quantity * price;
-//          if(mutableData.value['tradepool'] == null)
-//            mutableData.value['tradepool'] = {};
-//          if(mutableData.value['tradepool']['Money'] != null)
-//            mutableData.value['tradepool']['Money'] += quantity * price;
-//          else
-//            mutableData.value['tradepool']['Money'] = quantity * price;
-//        }
-//        print('change user');
-//        return mutableData;
-//      });
+      while(!(await tradepoolChange.committed)){
+        print('tradepoolChange recommit');
+        tradepoolChange = await _user.child('tradepool').runTransaction((MutableData mutableData) async {
+          if(mutableData.value == null) {
+            mutableData.value = {};
+            mutableData.value['Money'] = quantity * price;
+          }else {
+            mutableData.value['Money'] += quantity * price;
+          }
+          return mutableData;
+        });
+      }
       TransactionResult tradeAdd = await _trade.runTransaction((MutableData mutableData) async {
         mutableData.value = {
           'buyer': currentUser.uid,
@@ -657,6 +788,18 @@ class Nation{
         };
         return mutableData;
       });
+      while(!(await tradeAdd.committed)){
+        print('tradeAdd recommit');
+        tradeAdd = await _trade.runTransaction((MutableData mutableData) async {
+          mutableData.value = {
+            'buyer': currentUser.uid,
+            'price': price,
+            'quantity': quantity
+          };
+          return mutableData;
+        });
+      }
+      print('bid completed');
       return (resourceChange.committed && tradepoolChange.committed && tradeAdd.committed);
     }else{
       TransactionResult resourceChange = await _user.child('resources').runTransaction((MutableData mutableData) async {
@@ -665,27 +808,34 @@ class Nation{
         }
         return mutableData;
       });
+      while(!resourceChange.committed){
+        resourceChange = await _user.child('resources').runTransaction((MutableData mutableData) async {
+          if(mutableData.value != null) {
+            mutableData.value[resource] -= quantity;
+          }
+          return mutableData;
+        });
+      }
       TransactionResult tradepoolChange = await _user.child('tradepool').runTransaction((MutableData mutableData) async {
-        if(mutableData.value == null) {
-          mutableData.value = {};
-          mutableData.value[resource] = quantity;
-        }else {
-          mutableData.value[resource] += quantity;
+        if(mutableData.value != null) {
+          if(mutableData.value[resource] == null)
+            mutableData.value[resource] = quantity;
+          else
+            mutableData.value[resource] += quantity;
         }
         return mutableData;
       });
-//      TransactionResult userChange = await _user.runTransaction((MutableData mutableData) async {
-//        if(mutableData.value != null){
-//          mutableData.value['resources'][resource] -= quantity;
-//          if(mutableData.value['tradepool'] == null)
-//            mutableData.value['tradepool'] = {};
-//          if(mutableData.value['tradepool'][resource] != null)
-//            mutableData.value['tradepool'][resource] += quantity;
-//          else
-//            mutableData.value['tradepool'][resource] = quantity;
-//        }
-//        return mutableData;
-//      });
+      while(!tradepoolChange.committed){
+        tradepoolChange = await _user.child('tradepool').runTransaction((MutableData mutableData) async {
+          if(mutableData.value != null) {
+            if(mutableData.value[resource] == null)
+              mutableData.value[resource] = quantity;
+            else
+              mutableData.value[resource] += quantity;
+          }
+          return mutableData;
+        });
+      }
       TransactionResult tradeAdd = await _trade.runTransaction((MutableData mutableData) async {
         mutableData.value = {
           'seller': currentUser.uid,
@@ -694,6 +844,16 @@ class Nation{
         };
         return mutableData;
       });
+      while(!tradeAdd.committed){
+        tradeAdd = await _trade.runTransaction((MutableData mutableData) async {
+          mutableData.value = {
+            'seller': currentUser.uid,
+            'price': price,
+            'quantity': quantity
+          };
+          return mutableData;
+        });
+      }
       return (resourceChange.committed && tradepoolChange.committed && tradeAdd.committed);
     }
   }
@@ -721,7 +881,17 @@ class Nation{
   Future<bool> cancelMaker(bool bid, String resource, String id) async {
     DatabaseReference _user = FirebaseDatabase.instance.reference().child('users/${currentUser.uid}');
     DatabaseReference _trade = FirebaseDatabase.instance.reference().child('trade/${resource}/${bid? 'Bid':'Ask'}/${id}');
-    DataSnapshot trade = await _trade.once();
+    MutableData trade;
+    dynamic tradeData;
+    TransactionResult cancelTrade = await _trade.runTransaction((MutableData mutableData) async {
+      if(mutableData.value != null){
+        trade = mutableData;
+        tradeData = trade.value;
+        mutableData.value = {};
+      }
+      return mutableData;
+    });
+    trade.value = tradeData;
     if(bid){
       TransactionResult resourceChange = await _user.child('resources').runTransaction((MutableData mutableData) async {
         if(mutableData.value != null){
@@ -735,7 +905,6 @@ class Nation{
         }
         return mutableData;
       });
-      _trade.remove();
       return (resourceChange.committed && tradepoolChange.committed);
     }else{
       TransactionResult resourceChange = await _user.child('resources').runTransaction((MutableData mutableData) async {
@@ -750,18 +919,19 @@ class Nation{
         }
         return mutableData;
       });
-      _trade.remove();
       return (resourceChange.committed && tradepoolChange.committed);
     }
   }
 
-  Future<bool> initiatedNation(String name, String hash, int population) async {
+  Future<bool> initiatedNation(String name, String hash, int population, String url) async {
     if(created)
       return created;
     TransactionResult addNationList = await FirebaseDatabase.instance.reference().child('idToName/${currentUser.uid}').runTransaction((MutableData mutableData) async {
       Map<dynamic, dynamic> data = {};
       data['name'] = name;
       data['hash'] = hash;
+      data['url'] = url;
+      print(url);
       mutableData.value = data;
       return mutableData;
     });
@@ -790,7 +960,7 @@ class Nation{
       mutableData.value = historyData.trade;
       return mutableData;
     });
-    print('Trade Read ${transactionResult.committed}');
+    //print('Trade Read ${transactionResult.committed}');
   }
 
   void newsRead() async {
