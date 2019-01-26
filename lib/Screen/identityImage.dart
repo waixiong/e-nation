@@ -1,5 +1,13 @@
 import 'package:flutter/material.dart';
 import 'dart:math';
+import 'package:firebase_database/firebase_database.dart';
+//import 'package:firebase_storage/firebase_storage.dart';
+//import 'package:image_picker/image_picker.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:e_nation/Logic/TradeManager.dart';
+import 'package:path_provider/path_provider.dart';
+import 'dart:io';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 
 String identityGenerate(){
   BigInt h = BigInt.from(Random.secure().nextInt(4294967296));
@@ -11,6 +19,103 @@ String identityGenerate(){
     hash = '0' + hash;
   }
   return hash;
+}
+
+Future<void> fromCachetoDir(String imageUrl, File imgFile) async {
+  print('IDENTITY : find cache');
+  final file = await IdentityPhoto.cache.getFile(imageUrl);
+  print('IDENTITY : cache path -- '+file.path);
+  print('IDENTITY : direc path -- '+imgFile.path);
+  bool inCache = await file.exists();
+  print('IDENTITY : cache ${inCache?'':'not'} found');
+  if(inCache){
+    List<int> bytes = await file.readAsBytes();
+    imgFile = await imgFile.create(recursive: true);
+    imgFile.writeAsBytesSync(bytes);
+    print('IDENTITY : write completed');
+  }
+}
+
+class IdentityPhoto extends StatelessWidget{
+  IdentityPhoto({Key key, this.size, this.photo});
+
+  double size;
+  Widget photo;
+  static Directory appDir;
+  static Directory tempDir;
+  static CacheManager cache;
+
+  static IdentityPhoto fromUID({double size, String uid, TradeManager tradeManager}){
+    if(tradeManager.nationList[uid]['url'] != null) {
+      //;
+      CachedNetworkImageProvider p = new CachedNetworkImageProvider(tradeManager.nationList[uid]['url']);
+      return new IdentityPhoto(
+        size: size,
+        photo: new FutureBuilder<Directory>(
+          future: getApplicationDocumentsDirectory(),
+          builder: (BuildContext context, AsyncSnapshot<Directory> snapshot){
+            Widget defaultImage = new IdentityImage(size: size, hash: tradeManager.nationList[uid]['hash'],);
+            switch (snapshot.connectionState) {
+              case ConnectionState.none:
+              case ConnectionState.active:
+              case ConnectionState.waiting:
+                return defaultImage;
+              case ConnectionState.done:
+                if (snapshot.hasError)
+                  return defaultImage;
+                File imgFile = new File(snapshot.data.path + '/profileImg/${uid}/${tradeManager.nationList[uid]['hash']}');
+                if(!imgFile.existsSync()) {
+                  fromCachetoDir(tradeManager.nationList[uid]['url'], imgFile);
+                  return new CachedNetworkImage(
+                    imageUrl: tradeManager.nationList[uid]['url'],
+                    fit: BoxFit.cover,
+                    placeholder: new Stack(
+                      fit: StackFit.expand,
+                      children: <Widget>[
+                        new IdentityImage(
+                            size: size, hash: tradeManager.nationList[uid]['hash']),
+                        Container(
+                          color: Color.fromARGB(128, 0, 0, 0),
+                          child: Center(
+                            child: Container(
+                              height: size/3,
+                              width: size/3,
+                              child: CircularProgressIndicator(strokeWidth: size * 0.08>4? 4:size * 0.08,),
+                            ),
+                          ),
+                        )
+                      ],
+                    ),
+                    errorWidget: new IdentityImage(size: size, hash: tradeManager.nationList[uid]['hash']),
+                  );
+                }else {
+                  print('IDENTITY : found directory');
+                  return Image.file(imgFile);
+                }
+            }
+          },
+        ),
+      );
+    }else{
+      return new IdentityPhoto(
+        size: size,
+        photo: new IdentityImage(size: size, hash: tradeManager.nationList[uid]['hash'],),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // TODO: implement build
+    return new SizedBox(
+      width: size,
+      height: size,
+      child: new ClipOval(
+        clipper: new CircleRect(),
+        child: photo,//Image
+      ),
+    );
+  }
 }
 
 class IdentityImage extends StatelessWidget{

@@ -88,6 +88,7 @@ class _TradeHistoryState extends State<TradeHistory>{
           SliverSafeArea(
             sliver: data.length > 0? SliverList(
               delegate: SliverChildBuilderDelegate((BuildContext context, int index){
+                print(data[index~/2].key);
                 if(index%2 == 1){
                   return Divider();
                 }else{
@@ -98,7 +99,20 @@ class _TradeHistoryState extends State<TradeHistory>{
                     children: <Widget>[
                       new Container(
                         alignment: Alignment.centerLeft,
-                        child: Text('ID: ${data[index~/2].key}', style: TextStyle(fontSize: 10, color: Colors.grey), textAlign: TextAlign.left,),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: <Widget>[
+                            Text('ID: ${data[index~/2].key}', style: TextStyle(fontSize: 10, color: Colors.grey), textAlign: TextAlign.left,),
+                            Text(
+                              '${data[index~/2].value['exe']=='S'? 'SUCCESS':(data[index~/2].value['exe']=='P'? 'PARTIAL':(data[index~/2].value['exe']=='V'?'VIOLATE AGREEMENT':'FAIL'))}',
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: data[index~/2].value['exe']=='S'? Colors.green:(data[index~/2].value['exe']=='S'? Colors.orange:Colors.red)
+                              ),
+                              textAlign: TextAlign.right,
+                            )
+                          ],
+                        ),
                       ),
                       new Container(
                         alignment: Alignment.centerLeft,
@@ -115,11 +129,11 @@ class _TradeHistoryState extends State<TradeHistory>{
                     ],
                   );
                   if(data[index~/2].value['buyer'] == widget.nation.currentUser.uid){
-                    _leading = IdentityImage(size: 44, hash: widget.tradeManager.nationList[data[index~/2].value['seller']]['hash'],);
-                    _title = Text('Buy from ${widget.tradeManager.nationList[data[index~/2].value['seller']]['name']}');
+                    _leading = IdentityPhoto.fromUID(size: 44, uid: data[index~/2].value['seller'], tradeManager: widget.tradeManager);
+                    _title = Text('Import from ${widget.tradeManager.nationList[data[index~/2].value['seller']]['name']}');
                   }else{
-                    _leading = IdentityImage(size: 24, hash: widget.tradeManager.nationList[data[index~/2].value['buyer']]['hash'],);
-                    _title = Text('Sell to ${widget.tradeManager.nationList[data[index~/2].value['buyer']]['name']}');
+                    _leading = IdentityPhoto.fromUID(size: 44, uid: data[index~/2].value['buyer'], tradeManager: widget.tradeManager);
+                    _title = Text('Export to ${widget.tradeManager.nationList[data[index~/2].value['buyer']]['name']}');
                   }
                   return ListTile(
                     isThreeLine: true,

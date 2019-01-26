@@ -5,6 +5,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'dart:io' show Platform;
+import 'package:e_nation/Screen/Loading.dart';
+import 'package:flutter/services.dart';
 
 class LoginPage extends StatefulWidget {
   LoginPage({Key key}) : super(key: key);
@@ -28,46 +30,86 @@ class _LoginPageState extends State<LoginPage> {
   FirebaseAuth auth = FirebaseAuth.instance;
   FirebaseDatabase database = FirebaseDatabase.instance;
 
+  bool checkUser = true;
+  bool onLogin = false;
+  String loginErr = '';
   String _email = '';
   String _password = '';
   final formKey = new GlobalKey<FormState>();//for save and submit text used
+  List<Widget> LoginStack = [];
+
+  @override
+  initState(){
+    super.initState();
+  }
 
   //final FirebaseAuth auth = FirebaseAuth.instance;
-  Future<FirebaseUser> _hasUser() async{
+  Future<FirebaseUser> _hasUser() async {
     FirebaseUser currentUser = await auth.currentUser();
-    if(currentUser != null)
+    if(currentUser != null) {
       return currentUser;
-    else
+    }else {
       return null;
+    }
   }
 
   //googleSignIn
-  Future<FirebaseUser> _signIn() async {
-    final FirebaseUser user = await auth.signInWithEmailAndPassword(email: _email, password: _password);
-    assert(user.email != null);
+  Future<void> _signIn() async {
+    onLogin = true;
+    setState((){});
+    try {
+      FirebaseUser user = await auth.signInWithEmailAndPassword(email: _email, password: _password);
+      setState(() {
+        onLogin = false;
+        loginErr = '';
+        checkUser = true;
+      });
+    } on PlatformException catch (e) {
+      print('ERROR ' + e.message);
+      setState(() {
+        onLogin = false;
+        loginErr = e.message;
+      });
+    }
+//        .then((user){
+//      setState(() {
+//        onLogin = false;
+//      });
+//      return;
+//    }, onError: (PlatformException e){
+//      onLogin = false;
+//      print('ERROR IN AUTH ' + e.code);
+//      setState((){});
+//      return;
+//    });
+    //assert(user.email != null);
     //assert(user.displayName != null);
-    assert(!user.isAnonymous);
-    assert(await user.getIdToken() != null);
-
-    FirebaseUser currentUser = await auth.currentUser();
-    assert(user.uid == currentUser.uid);
-
-    print('user is ' + currentUser.uid);
-    return currentUser;
+    //assert(!user.isAnonymous);
+    //assert(await user.getIdToken() != null);
+  }
+  
+  void LoginDone(FirebaseUser user){
+    Navigator.pushReplacement(context, new MaterialPageRoute(builder: (BuildContext context) => CustomFAB(title: 'E-NATION', currentUser: user, auth: auth,)));
   }
 
   @override
   Widget build(BuildContext context) {
-    _hasUser().then((b){
-      //print('login $b');
-      if(b != null) {
-        Navigator.pushReplacement(context, new MaterialPageRoute(builder: (context) => new CustomFAB(title: 'E-Nation', currentUser: b, auth: auth,)));
-      }else{
-        print('no user');
-      }
-    });
+    if(checkUser){
+      _hasUser().then((b){
+        //print('login $b');
+        setState(() {
+          checkUser = false;
+        });
+        if(b != null) {
+          Navigator.pushReplacement(context, new MaterialPageRoute(builder: (context) => new CustomFAB(title: 'E-Nation', currentUser: b, auth: auth,)));
+        }else{
+          print('no user');
+        }
+      });
+    }
 
-    return new Scaffold(
+    LoginStack = [];
+    LoginStack.add(new Scaffold(
       body: new Center(
         child: new Container(
           margin: const EdgeInsets.fromLTRB(20.0, 36.0, 20.0, 36.0),
@@ -124,6 +166,7 @@ class _LoginPageState extends State<LoginPage> {
                   ],
                 ),
               ),
+              Text('${loginErr}', style: TextStyle(color: Colors.red, fontSize: 8),),
               new Container(
                 padding: const EdgeInsets.fromLTRB(40.0, 8.0, 40.0, 8.0),
                 child: new RaisedButton(
@@ -132,20 +175,36 @@ class _LoginPageState extends State<LoginPage> {
                     form.save();
                     if(formKey.currentState.validate()){
                       print('start Login');
-                      FirebaseUser currentUser = await _signIn();
+                      await _signIn();
                       print('finish Login');
-                      //login firebase email auth
-                      Navigator.pushReplacement(context, new MaterialPageRoute(builder: (context) => new CustomFAB(title: 'E-Nation', currentUser: currentUser, auth: auth,)));
                     }
                   },
                   color: Theme.of(context).primaryColor,
                   child: new Center(
-                      child: new Text('Login',
+                      child: !onLogin? new Text('Login',
                         style: new TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 16.0,
                           color: Colors.white,
-                        ),)
+                        ),
+                      ) : new Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: <Widget>[
+                          Container(
+                            height: 12,
+                            width: 12,
+                            child: CircularProgressIndicator(strokeWidth: 2,),
+                          ),
+                          new Text('Login',
+                            style: new TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16.0,
+                              color: Colors.white,
+                            ),
+                          )
+                        ],
+                      )
                   ),
                 ),
               ),
@@ -154,6 +213,14 @@ class _LoginPageState extends State<LoginPage> {
         ),
       ),
       // This trailing comma makes auto-formatting nicer for build methods.
+    ));
+    print('login build');
+    if(checkUser){
+      LoginStack.add(Loading());
+    }
+    return Stack(
+      fit: StackFit.expand,
+      children: LoginStack,
     );
   }
 }

@@ -5,6 +5,8 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:connectivity/connectivity.dart';
 import 'dart:async';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 
 import 'package:e_nation/Screen/HomePage.dart';
 import 'package:e_nation/Screen/LoginPage.dart';
@@ -18,6 +20,11 @@ import 'package:e_nation/Screen/identityImage.dart';
 import 'package:e_nation/Screen/CreateNation.dart';
 import 'package:e_nation/Screen/TradeHistory.dart';
 import 'package:e_nation/Screen/NewsInfo.dart';
+import 'package:e_nation/Screen/Loan.dart';
+import 'package:e_nation/Screen/Notify.dart';
+
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
+import 'package:path_provider/path_provider.dart';
 
 enum Page {
   HOME, TRADE, GOVERN, STAT
@@ -30,6 +37,7 @@ class CustomFAB extends StatefulWidget {
   FirebaseAuth auth;
   FirebaseUser currentUser;
   final String title;
+  StreamSubscription<bool> fabChange;
 
   CustomFAB({Key key, this.title, this.currentUser, this.auth});
 
@@ -57,10 +65,11 @@ class _CustomFABState extends State<CustomFAB>
   Color customRed = Color.fromARGB(255, 233, 135, 124);
   Color customYellow = Color.fromARGB(255, 252, 214, 133);
 
-  Nation nation = new Nation(name: 'LASTOLK', human: 8000);
+  Nation nation = new Nation(name: 'NATION', human: 0);
   bool created = true;
   TradeManager tradeManager;
 
+  PageController _pageController;
   int p = 0;
   Page page = Page.HOME;
   HomePage homePage;
@@ -69,11 +78,28 @@ class _CustomFABState extends State<CustomFAB>
   StatPage statPage;
   TradeHistory tradeHistory;
   NewsInfo newsInfo;
+  LoanPage loanPage;
 
+  NotifyWidget notifyWidget;
+  List<Widget> _stackList;
+  
   bool onLoading = false;
+  Widget fabLoading = new Container(
+    color: Color.fromARGB(128, 0, 0, 0),
+    child: Loading(),
+  );
+  
+  StreamSubscription<Notify> notification;
+
+  getDir() async {
+    IdentityPhoto.appDir = await getApplicationDocumentsDirectory();
+    //IdentityPhoto.tempDir = await getTemporaryDirectory();
+    IdentityPhoto.cache = await CacheManager.getInstance();
+  }
 
   @override
   initState() {
+    getDir();
     tradeManager = new TradeManager(currentUser: widget.currentUser);
     nation.start(widget.currentUser);
     tradeManager.initialize();
@@ -84,32 +110,67 @@ class _CustomFABState extends State<CustomFAB>
 
     tradeHistory = new TradeHistory(nation: nation, tradeManager: tradeManager,);
     newsInfo = new NewsInfo(nation: nation,);
+    loanPage = new LoanPage(nation: nation, currentUser: widget.currentUser, auth: widget.auth, tradeManager: tradeManager,);
 
+    _pageController = PageController(
+      initialPage: p,
+      keepPage: true
+    );
+    notifyWidget = new NotifyWidget(nation: nation, tradeManager: tradeManager,);
+//    PageView pageView = new PageView(
+//      physics: new NeverScrollableScrollPhysics(),
+//      controller: _pageController,
+//      children: <Widget>[
+//        homePage,
+//        tradePage,
+//        governPage,
+//        statPage
+//      ],
+//    );
+//    _stackList = [];
+//    _stackList.add(new Container(
+//      decoration: BoxDecoration(color: Colors.white),
+//      child: pageView,//_pageNow(),
+//    ));
+//    _stackList.add(notifyWidget);
+
+    notification = nation.FABNotification.listen((Notify notify){
+      //print('sending ${notify.dataSnapshot.key}');
+      notifyWidget.setNotification(notify);
+    });
+
+//    if(widget.fabChange == null){
+//      widget.fabChange = nation.FABRefresh.listen((b){
+//        setState(() {});
+//      });
+//    }else{
+//      widget.fabChange.resume();
+//    }
     StreamSubscription<ConnectivityResult> subscription = new Connectivity().onConnectivityChanged.listen((ConnectivityResult result) {
       // Got a new connectivity status!
       print('connect ${result.toString()}');
     });
 
-    DatabaseReference loading = FirebaseDatabase.instance.reference().child('loading');
-    loading.onValue.listen((Event event){
-      if(event.snapshot.value){
-        nation.pauseFire();
-        onLoading = event.snapshot.value;
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (BuildContext context){
-            return Loading();
-          }
-        );
-      }else{
-        if(onLoading){
-          nation.resumeFire();
-          Navigator.pop(context);
-          onLoading = event.snapshot.value;
-        }
-      }
-    });
+//    DatabaseReference loading = FirebaseDatabase.instance.reference().child('loading');
+//    loading.onValue.listen((Event event){
+//      if(event.snapshot.value){
+//        nation.pauseFire();
+//        onLoading = event.snapshot.value;
+//        showDialog(
+//          context: context,
+//          barrierDismissible: false,
+//          builder: (BuildContext context){
+//            return Loading();
+//          }
+//        );
+//      }else{
+//        if(onLoading){
+//          nation.resumeFire();
+//          Navigator.pop(context);
+//          onLoading = event.snapshot.value;
+//        }
+//      }
+//    });
     DatabaseReference nations = FirebaseDatabase.instance.reference().child('idToName');
     nations.onChildAdded.listen((event){
       tradeManager.nationList[event.snapshot.key] = event.snapshot.value;
@@ -196,6 +257,7 @@ class _CustomFABState extends State<CustomFAB>
 
   @override
   dispose() {
+    //widget.fabChange.pause();
     _animationController.dispose();
     super.dispose();
   }
@@ -220,7 +282,11 @@ class _CustomFABState extends State<CustomFAB>
         child: FloatingActionButton(
           heroTag: '4',
           backgroundColor: page == Page.STAT ? _statColor.value : customBlue,
-          onPressed: page == Page.STAT ? animate : (){ setState(() { page = Page.STAT; p = 3; }); animate(); },
+          onPressed: page == Page.STAT ? animate : (){ setState(() {
+            page = Page.STAT;
+            p = 3;
+            //_pageController.jumpToPage(p);
+          }); animate(); print('Stat'); },
           tooltip: 'Statistic',
           child: page == Page.STAT ? AnimatedIcon(
             icon: AnimatedIcons.menu_close,
@@ -242,7 +308,11 @@ class _CustomFABState extends State<CustomFAB>
         child: FloatingActionButton(
           heroTag: '3',
           backgroundColor: page == Page.GOVERN? _governColor.value : customGreen,
-          onPressed: page == Page.GOVERN? animate : (){ setState(() { page = Page.GOVERN; p = 2; }); animate(); },
+          onPressed: page == Page.GOVERN? animate : (){ setState(() {
+            page = Page.GOVERN;
+            p = 2;
+            //_pageController.jumpToPage(p);
+          }); animate(); print('Govern'); },
           tooltip: 'Govern',
           child: page == Page.GOVERN ? AnimatedIcon(
             icon: AnimatedIcons.menu_close,
@@ -264,8 +334,12 @@ class _CustomFABState extends State<CustomFAB>
         child: FloatingActionButton(
           heroTag: '2',
           backgroundColor: page == Page.TRADE ? _tradeColor.value : customRed,
-          onPressed: page == Page.TRADE ? animate : (){ setState(() { page = Page.TRADE; p = 1; }); animate(); },
-          tooltip: 'Inbox',
+          onPressed: page == Page.TRADE ? animate : (){ setState(() {
+            page = Page.TRADE;
+            p = 1;
+            //_pageController.jumpToPage(p);
+          }); animate(); print('Trade'); },
+          tooltip: 'Trade',
           child: page == Page.TRADE ? AnimatedIcon(
             icon: AnimatedIcons.menu_close,
             progress: _animateIcon,
@@ -286,8 +360,12 @@ class _CustomFABState extends State<CustomFAB>
         child: FloatingActionButton(
           heroTag: '1',
           backgroundColor: page == Page.HOME ? _homeColor.value : customYellow,
-          onPressed: page == Page.HOME ? animate : (){ setState(() { page = Page.HOME; p = 0; }); animate(); },
-          tooltip: 'Toggle',
+          onPressed: page == Page.HOME ? animate : (){ setState(() {
+            page = Page.HOME;
+            p = 0;
+            //_pageController.jumpToPage(p);
+          }); animate(); print('Home'); },
+          tooltip: 'Produce',
           child: page == Page.HOME ? AnimatedIcon(
             icon: AnimatedIcons.menu_close,
             progress: _animateIcon,
@@ -298,24 +376,28 @@ class _CustomFABState extends State<CustomFAB>
   }
 
   Widget identity(){
+    //print('load images');
+    Widget defaultImage = new IdentityImage(size: 72, hash: 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF');
     return tradeManager.nationList.containsKey(widget.currentUser.uid)?
-    new IdentityImage(size: 60, hash: tradeManager.nationList[widget.currentUser.uid]['hash'])
-        : new IdentityImage(size: 60, hash: 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF');
+    IdentityPhoto.fromUID(size: 72, uid: widget.currentUser.uid, tradeManager: tradeManager)
+        : defaultImage;
   }
 
-  Widget _pageNow(){
-    if(page == Page.HOME)
-      return homePage;
-    else if(page == Page.TRADE)
-      return tradePage;
-    else if(page == Page.GOVERN)
-      return governPage;
-    else
-      return statPage;
-  }
+//  Deprecated
+//  Widget _pageNow(){
+//    if(page == Page.HOME)
+//      return homePage;
+//    else if(page == Page.TRADE)
+//      return tradePage;
+//    else if(page == Page.GOVERN)
+//      return governPage;
+//    else
+//      return statPage;
+//  }
 
   @override
   Widget build(BuildContext context) {
+    //print('STACK LENGTH : ${_stackList.length.toString()}');
     FirebaseDatabase.instance.reference().child('users/${widget.currentUser.uid}/create').once().then((DataSnapshot snap){
       if(!snap.value && created){
         created = false;
@@ -334,6 +416,32 @@ class _CustomFABState extends State<CustomFAB>
       _buttonList = <Widget>[trade(), home(), statistic(), govern()];
     else
       _buttonList = <Widget>[govern(), trade(), home(), statistic()];
+
+    PageView pageView = new PageView(
+      physics: new NeverScrollableScrollPhysics(),
+      controller: _pageController,
+      children: <Widget>[
+        homePage,
+        tradePage,
+        governPage,
+        statPage
+      ],
+    );
+    IndexedStack indexedStack = new IndexedStack(
+      index: p,
+      children: <Widget>[
+        homePage,
+        tradePage,
+        governPage,
+        statPage
+      ],
+    );
+    _stackList = [];
+    _stackList.add(new Container(
+      decoration: BoxDecoration(color: Colors.white),
+      child: indexedStack,//_pageNow(),
+    ));
+    _stackList.add(notifyWidget);
     return new Scaffold(
       resizeToAvoidBottomPadding: false,
       key: _scaffoldKey,
@@ -406,7 +514,7 @@ class _CustomFABState extends State<CustomFAB>
                     padding: EdgeInsets.only(top: 8, bottom: 10),
                     child: identity(),
                   ),
-                  new Text('${widget.currentUser.email}', style: TextStyle(color: Colors.white),)
+                  new Text('${tradeManager.nationList.containsKey(widget.currentUser.uid)? tradeManager.nationList[widget.currentUser.uid]['name']:'NATION_NAME'}', style: TextStyle(color: Colors.white),)
                 ],
               ),
               decoration: BoxDecoration(
@@ -416,8 +524,11 @@ class _CustomFABState extends State<CustomFAB>
             ListTile(
               title: new Row(
                 children: <Widget>[
-                  new Text('Trade History'),
-                  new Icon(Icons.new_releases, color: Colors.red,)
+                  Container(
+                    width: 40,
+                    child: new Icon(Icons.repeat, size: 24,),
+                  ),
+                  new Text('Trade History')
                 ],
               ),
               onTap: (){
@@ -427,12 +538,44 @@ class _CustomFABState extends State<CustomFAB>
             ListTile(
               title: new Row(
                 children: <Widget>[
-                  new Text('News'),
-                  new Icon(Icons.new_releases, color: Colors.red,)
+                  Container(
+                    width: 40,
+                    child: new Icon(Icons.info, size: 24,),
+                  ),
+                  new Text('Info')
                 ],
               ),
               onTap: (){
                 Navigator.push(context, new MaterialPageRoute(builder: (BuildContext context) => newsInfo));
+              },
+            ),
+            ListTile(
+              title: new Row(
+                children: <Widget>[
+                  Container(
+                    width: 40,
+                    child: new Icon(Icons.monetization_on, size: 24,),
+                  ),
+                  new Text('Loan')
+                ],
+              ),
+              onTap: (){
+                Navigator.push(context, new MaterialPageRoute(builder: (BuildContext context) => loanPage));
+              },
+            ),
+            ListTile(
+              title: new Row(
+                children: <Widget>[
+                  Container(
+                    width: 40,
+                    child: new Icon(Icons.map, size: 24,),
+                  ),
+                  new Text('Map')
+                ],
+              ),
+              onTap: (){
+                print('Map will be shown');
+                //Navigator.push(context, new MaterialPageRoute(builder: (BuildContext context) => loanPage));
               },
             ),
             ListTile(
@@ -445,9 +588,41 @@ class _CustomFABState extends State<CustomFAB>
           ],
         ),
       ),
-      body: new Container(
-        decoration: BoxDecoration(color: Colors.white),
-        child: _pageNow(),
+      body: new StreamBuilder(
+        stream: nation.FABRefresh,
+        builder: (BuildContext context, AsyncSnapshot<bool> snap){
+          if(!snap.hasData){
+            //if(!onLoading) {
+            //  onLoading = false;
+              if(_stackList.length > 1){
+                _stackList.insert(1, fabLoading);
+              }else{
+                _stackList.add(fabLoading);
+              }
+            //}
+          }else{
+            if(!snap.data){
+              //if(!onLoading) {
+              //  onLoading = false;
+                if(_stackList.length > 1){
+                  _stackList.insert(1, fabLoading);
+                }else{
+                  _stackList.add(fabLoading);
+                }
+              //}
+            }else{
+              //onLoading = true;
+              if(_stackList.length > 1){
+                if(_stackList[1] == fabLoading){
+                  _stackList.removeAt(1);
+                }
+              }
+            }
+          }
+          return new Stack(
+            children: _stackList,
+          );
+        },
       ),
       floatingActionButton: Column(
         mainAxisAlignment: MainAxisAlignment.end,

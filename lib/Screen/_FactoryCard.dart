@@ -47,48 +47,49 @@ class FactoryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      child: Stack(
-        fit: StackFit.expand,
-        children: <Widget>[
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              Container(
-                width: 180.0,
-                height: 164.0,
-                padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                child: Hero(
-                  tag: tag,
-                  child: Image.asset(
-                    facImg,//image
-                    package: 'e_nation',
-                    fit: BoxFit.fitWidth,
+      child: Container(
+        width: MediaQuery.of(context).size.width,
+        height: MediaQuery.of(context).size.width/2 - 16.0,
+        child: Stack(
+          fit: StackFit.expand,
+          children: <Widget>[
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: <Widget>[
+                Container(
+                  width: MediaQuery.of(context).size.width/2,
+                  height: MediaQuery.of(context).size.width/32*9,
+                  padding: const EdgeInsets.symmetric(horizontal: 0.0),
+                  child: Hero(
+                    tag: tag,
+                    child: Image.asset(
+                      facImg,//image
+                      package: 'e_nation',
+                      fit: BoxFit.fitWidth,
+                    ),
                   ),
                 ),
-              ),
-            ],
-          ),
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: new Container(
-              height: 24,
-              decoration: BoxDecoration(
-                  color: Colors.white
-              ),
+                Container(
+                  width: MediaQuery.of(context).size.width/2,
+                  height: 62.75,
+                  //padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                  child: Center(
+                    child: Text('${resource}\nProduction Line', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.w200),),
+                  ),
+                )
+              ],
             ),
-          ),
-          Align(
-            alignment: Alignment.topRight,
-            child: ResourcePic(resourceImg: resImg, radius: 8.0,),
-          ),
-          Material(
-            type: MaterialType.transparency,
-            child: InkWell(onTap: onPressed),
-          ),
-        ],
+            Align(
+              alignment: Alignment.topRight,
+              child: ResourcePic(resourceImg: resImg, radius: 24.0,),
+            ),
+            Material(
+              type: MaterialType.transparency,
+              child: InkWell(onTap: onPressed),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -185,7 +186,7 @@ class _FactoryInputList extends State<FactoryInputList>{
       ),
     ));
     String neededList = '';
-    Map<String, double> map = widget.nation.master.building[widget.resource]['input'];
+    Map<String, num> map = widget.nation.master.building[widget.resource]['input'];
     map.forEach((resource, value){
       neededList += (value*100).toInt().toString() + ' '+ resource + ', ';
     });
@@ -199,16 +200,30 @@ class _FactoryInputList extends State<FactoryInputList>{
       for(int i = 0; i < factoryList.length; i++){
         List<Widget> factoryTitle = <Widget>[
           Expanded(
-            child: Text('${widget.resource} Level${factoryList[i]['level']+1} Production${i+1}', textAlign: TextAlign.left,),
+            child: Text('${widget.resource} Production ${i+1} - Level ${factoryList[i]['level']+1}', textAlign: TextAlign.left,),
           ),
-          IconButton(icon: Icon(Icons.arrow_upward), onPressed: (factoryList[i]['level'] < 1 && !factoryList[i]['upgrade'])? (){
+          IconButton(icon: Icon(Icons.arrow_upward), onPressed: (factoryList[i]['level'] < (widget.nation.master.building[widget.resource]['upgrade'].length-1) && !factoryList[i]['upgrade'])? (){
             showDialog<bool>(
               context: context,
               builder: (BuildContext context) {
                 // return object of type Dialog
+                Map<dynamic, dynamic> requirement = widget.nation.master.building[widget.resource]['upgrade'][factoryList[i]['level']+1];
+                String resourcesNeed = '';
+                widget.nation.master.resourcesOrder.forEach((r){
+                  if(requirement.containsKey(r)){
+                    resourcesNeed += ', ' + requirement[r].toString() + ' ' + r;
+                  }
+                });
+                resourcesNeed += ' need';
+                resourcesNeed = resourcesNeed.substring(2, resourcesNeed.length);
+                //check Govern buidling
+                String gR = '';
+                if(requirement.containsKey('Education')){
+                  gR += '\nEducation level need to be at level ${requirement['Education']} or above.';
+                }
                 return AlertDialog(
-                  title: new Text('Upgrade ${widget.resource} Production to level${factoryList[i]['level']+2}'),
-                  content: new Text('${widget.nation.master.building[widget.resource]['upgrade'][factoryList[i]['level']+1]['human']} human need'),
+                  title: new Text('Upgrade ${widget.resource} Production to level ${factoryList[i]['level']+2}'),
+                  content: new Text('${requirement['human'].toString()} human need\n${requirement['Money'].toString()} money need\n${resourcesNeed}${gR}'),
                   actions: <Widget>[
                     // usually buttons at the bottom of the dialog
                     new FlatButton(
@@ -258,7 +273,7 @@ class _FactoryInputList extends State<FactoryInputList>{
           value: _factoryInputState[i].toDouble(),
           min: 0,
           max: max.toDouble(),
-          divisions: (max/100).toInt(),
+          divisions: (max/widget.nation.master.building[widget.resource]['step']).toInt(),
           label: '${_factoryInputState[i].round()}',
           onChanged: !factoryList[i]['upgrade'] ? (double value){
             setState(() {
@@ -283,10 +298,24 @@ class _FactoryInputList extends State<FactoryInputList>{
             showDialog<bool>(
               context: context,
               builder: (BuildContext context) {
+                Map<dynamic, dynamic> requirement = widget.nation.master.building[widget.resource]['upgrade'][0];
+                String resourcesNeed = '';
+                widget.nation.master.resourcesOrder.forEach((r){
+                  if(requirement.containsKey(r)){
+                    resourcesNeed += ', ' + requirement[r].toString() + ' ' + r;
+                  }
+                });
+                resourcesNeed += ' need';
+                resourcesNeed = resourcesNeed.substring(2, resourcesNeed.length);
+                //check Govern buidling
+                String gR = '';
+                if(requirement.containsKey('Education')){
+                  gR += '\nEducation level need to be at level ${requirement['Education']} or above.';
+                }
                 // return object of type Dialog
                 return AlertDialog(
                   title: new Text('Build ${factoryList.length == 0? 'a':'another'} ${widget.resource} production line?'),
-                  content: new Text('${widget.nation.master.building[widget.resource]['upgrade'][0]['human']} human need'),
+                  content: new Text('${requirement['human'].toString()} human need\n${requirement['Money'].toString()} money need\n${resourcesNeed}${gR}\nRequire a land to build'),//new Text('${widget.nation.master.building[widget.resource]['upgrade'][0]['human']} human need'),
                   actions: <Widget>[
                     // usually buttons at the bottom of the dialog
                     new FlatButton(
@@ -359,17 +388,52 @@ class _FactoryInputList extends State<FactoryInputList>{
 
     return new Scaffold(
       body: new WillPopScope(
-        child: new Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: dialogList,
+        child: new Center(
+          child: new SingleChildScrollView(
+            child: new Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: dialogList,
+            ),
+          ),
         ),
         onWillPop: (){
           try {
+            bool enough = true;
+            String r = '';
             for(int i = 0; i < _factoryInputState.length; i++) {
-              widget.nation.assignResources(widget.resource, i, _factoryInputState[i]);
+              //print('pop');
+              String result = widget.nation.assignResources(widget.resource, i, _factoryInputState[i]);
+              print(result);
+              if(result != 'assign'){
+                r = result;
+                enough = false;
+                break;
+              }
             }
-            Navigator.pop(context, null);
+            if(enough) {
+              Navigator.pop(context, null);
+            }else{
+              showDialog(
+                context: context,
+                builder: (BuildContext context){
+                  return AlertDialog(
+                    title: new Text('Error'),
+                    content: new Text('${r}'),
+                    actions: <Widget>[
+                      // usually buttons at the bottom of the dialog
+                      new FlatButton(
+                        child: new Text("Close"),
+                        onPressed: () {
+                          Navigator.pop(context);
+                        },
+                      ),
+                    ],
+                  );
+                }
+              );
+            }
           }catch(e){
+            print(e);
             showDialog(
               context: context,
               builder: (BuildContext context) {

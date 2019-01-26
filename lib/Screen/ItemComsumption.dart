@@ -78,7 +78,7 @@ class OutCircle extends CustomPainter{
   @override
   bool shouldRepaint(CustomPainter oldDelegate) {
     // TODO: implement shouldRepaint
-    return false;
+    return true;
   }
 }
 
@@ -108,7 +108,7 @@ class TagCircle extends CustomPainter{
   @override
   bool shouldRepaint(CustomPainter oldDelegate) {
     // TODO: implement shouldRepaint
-    return false;
+    return true;
   }
 }
 
@@ -138,6 +138,9 @@ class _ComsumptionSliderState extends State<ComsumptionSlider> {
   bool loading = true;
 
   int _inputState = 0;
+  int quantity = 0;
+  final _quantityKey = GlobalKey<FormState>();
+  TextEditingController quantityController = TextEditingController();
 
   @override
   void initState(){
@@ -155,35 +158,88 @@ class _ComsumptionSliderState extends State<ComsumptionSlider> {
       if(widget.nation.comsumptionSupply[widget.resource] != null) {
         setState(() {
           _inputState = widget.nation.comsumptionSupply[widget.resource];
+          quantity = widget.nation.comsumptionSupply[widget.resource];
+          if(quantity == 0)
+            quantityController.text = '';
+          else
+            quantityController.text = quantity.toString();
         });
       }else {
         setState(() {
           _inputState = 0;
+          quantityController.text = '';
         });
       }
     }
   }
 
-  List<Widget> buildSlider(){
+  List<Widget> buildSlider(){//change from slider to text
     List<Widget> list = <Widget>[];
-    int max = widget.nation.comsumptionSupply.containsKey(widget.resource) ? ((widget.nation.resources[widget.resource] + widget.nation.comsumptionSupply[widget.resource])/ 10).floor() * 10 : ((widget.nation.resources[widget.resource])/ 10).floor() * 10;
-    list.add(new Text('${widget.resource} Comsumption', textAlign: TextAlign.left,));
+    int max = widget.nation.comsumptionSupply.containsKey(widget.resource) ? ((widget.nation.resources[widget.resource] + widget.nation.comsumptionSupply[widget.resource])) : ((widget.nation.resources[widget.resource]));
+    list.add(new Container(height: 60, alignment: Alignment.center, child: new Text('${widget.resource} Consumption', style: TextStyle(fontWeight: FontWeight.w700 ), textAlign: TextAlign.center,),));
     list.add(Slider(
       value: _inputState.toDouble(),
       min: 0,
       max: max.toDouble(),
-      divisions: (max >= 10)? (max/10).toInt() : 1,
+      divisions: (max != 0)? (max).toInt() : 1,
       label: '${_inputState.round()}',
       onChanged: (double value){
         setState(() {
           //factoryList[i]['input']['human'] = value.toInt();
           _inputState = value.toInt();
+          quantity = _inputState;
+          if(quantity == 0)
+            quantityController.text = '';
+          else
+            quantityController.text = quantity.toString();
         });
       },
       activeColor: Colors.grey.shade500,
     ));
+    list.add(new Container(
+      padding: EdgeInsets.fromLTRB(0, 0, 0, 10),
+      width: MediaQuery.of(context).size.width * 0.6,
+      child: new Form(
+        onChanged: () => _quantityKey.currentState.validate(),
+        key: _quantityKey,
+        child: new TextFormField(
+          keyboardType: TextInputType.number,
+          textAlign: TextAlign.right,
+          decoration: new InputDecoration(labelText: 'Quantity Supply'),
+          autofocus: false,
+          validator: (value){
+            try{
+              quantity = int.parse(value);
+              if(quantity > max){
+                setState(() { _inputState = max; });
+                quantityController.text = max.toString();
+                return 'Please enter available quantity\n${max.toString()} or below';
+              }else if(quantity < 0){
+                setState(() { _inputState = 0; });
+                quantityController.text = 0.toString();
+                return 'Please enter available quantity\nIn between 0 and ${max.toString()}';
+              }
+              setState(() { _inputState = quantity; });
+              return null;
+            }catch(e){
+              if(value.length == 0){
+                quantityController.text = '';
+                setState(() { _inputState = 0; });
+                return null;
+              }else {
+                quantityController.text = _inputState.toString();
+              }
+              return 'Please enter a integer as quantity';
+            }
+          },
+          controller: quantityController,
+        ),
+      ),
+    ));
     int need = widget.nation.comsumptionDemand[widget.resource] - _inputState;
+    int min = widget.nation.minD[widget.resource] - _inputState;
     list.add(new Text('${need>0? '${need} needed' : 'Supply is enough for demand'}', textAlign: TextAlign.center,));
+    list.add(new Text('${min>0? '${min} needed to meet requirement' : 'Supply is meet minimum requirement'}', textAlign: TextAlign.center,));
     list.add(Container(height: 24,));
     list.add(new ButtonBar(
       children: <Widget>[

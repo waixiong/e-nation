@@ -29,17 +29,18 @@ class GovernPage extends StatefulWidget {
   _GovernPageState createState() => new _GovernPageState();
 }
 
-class _GovernPageState extends State<GovernPage> {
+class _GovernPageState extends State<GovernPage> with AutomaticKeepAliveClientMixin<GovernPage>{
   final GlobalKey<ScaffoldState> _scaffoldKey = new GlobalKey<ScaffoldState>();
   _GovernPageState({Key key,});
-  List<String> specialBuilding = ['Education', 'Healthcare', 'R&D', 'Telecommunication'];
-  List<Color> textColors = [Colors.blue.shade400, Colors.green.shade400, Colors.red.shade400, Colors.amber.shade400];
-  List<Color> titleColors = [Colors.blue.shade600, Colors.green.shade300, Colors.red.shade300, Colors.amber.shade600];
+  List<String> specialBuilding = ['Education', 'Healthcare', 'Telecommunication'];
+  List<Color> textColors = [Colors.blue.shade400, Colors.green.shade400, Colors.amber.shade400];
+  List<Color> titleColors = [Colors.blue.shade600, Colors.green.shade300, Colors.amber.shade600];
 
   @override
   void initState(){
     // TODO: implement initState
     super.initState();
+    print('init govern');
     if(widget.change == null){
       widget.change = widget.nation.governRefresh.listen((data){
         setState(() {});
@@ -49,15 +50,43 @@ class _GovernPageState extends State<GovernPage> {
     }
   }
 
+  @override
+  void deactivate() {
+    // TODO: implement deactivate
+    super.deactivate();
+    print('deactivate govern');
+  }
+
+  @override
+  void dispose(){
+    widget.change.pause();
+    print('dispose govern but keep alive = '+wantKeepAlive.toString());
+    super.dispose();
+  }
+
   Future<bool> upgradeDialog(String type) async {
     int level = widget.nation.specialBuilding[type]['level'];
     return await showDialog<bool>(
       context: context,
       builder: (BuildContext context) {
+        Map<dynamic, dynamic> requirement = widget.nation.master.specialBuilding[type]['upgrade'][level];
+        String resourcesNeed = '';
+        widget.nation.master.resourcesOrder.forEach((r){
+          if(requirement.containsKey(r)){
+            resourcesNeed += ', ' + requirement[r].toString() + ' ' + r;
+          }
+        });
+        resourcesNeed += ' need';
+        resourcesNeed = resourcesNeed.substring(2, resourcesNeed.length);
+        //check Govern buidling
+        String gR = '';
+        if(requirement.containsKey('Education')){
+          gR += '\nEducation level need to be at level ${requirement['Education']} or above.';
+        }
         // return object of type Dialog
         return AlertDialog(
           title: new Text('Upgrade ${type} to level ${level + 1}'),
-          content: new Text('${widget.nation.master.specialBuilding[type]['upgrade'][level]['human']} human need'),
+          content: new Text('${widget.nation.master.specialBuilding[type]['upgrade'][level]['human']} human need\n${requirement['Money'].toString()} money need\n${resourcesNeed}${gR}'),
           actions: <Widget>[
             // usually buttons at the bottom of the dialog
             new FlatButton(
@@ -130,12 +159,6 @@ class _GovernPageState extends State<GovernPage> {
   }
 
   @override
-  void dispose(){
-    super.dispose();
-    widget.change.pause();
-  }
-
-  @override
   Widget build(BuildContext context) {
     return new Column(
       children: <Widget>[
@@ -187,8 +210,8 @@ class _GovernPageState extends State<GovernPage> {
             ],
           )
         ),
-        new Container(
-          height: 410,
+        new Expanded(
+          //height: MediaQuery.of(context).size.height - 85 - 150,
           child: new ListView.builder(
             scrollDirection: Axis.vertical,
             shrinkWrap: true,
@@ -224,7 +247,7 @@ class _GovernPageState extends State<GovernPage> {
                         new Expanded(
                           child: Padding(
                             padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 0.0),
-                            child: new Text('${specialBuilding[index]}'),
+                            child: new Text('${specialBuilding[index]} level ${widget.nation.specialBuilding[specialBuilding[index]]['level']}'),
                           ),
                         ),
                         ButtonTheme.bar(
@@ -249,7 +272,7 @@ class _GovernPageState extends State<GovernPage> {
                                       widget.nation.cancelUpgradeSpecialBuilding(specialBuilding[index]);
                                     }
                                   });
-                                } : () {
+                                } : (widget.nation.specialBuilding[specialBuilding[index]]['level'] < widget.nation.master.specialBuilding[specialBuilding[index]]['upgrade'].length? () {
                                   upgradeDialog(specialBuilding[index]).then((react){
                                     if(react) {
                                       String reply = widget.nation.upgradeSpecialBuilding(specialBuilding[index]);
@@ -260,10 +283,10 @@ class _GovernPageState extends State<GovernPage> {
                                       }
                                     }
                                   });
-                                },
+                                } : null),
                               ),
                               FlatButton(
-                                child: Text('MANAGE'),
+                                child: Text('DETAILS'),
                                 textColor: textColors[index],
                                 onPressed: () async {
                                   DateTime date = new DateTime.fromMillisecondsSinceEpoch(1546245343602, isUtc: false);
@@ -283,4 +306,8 @@ class _GovernPageState extends State<GovernPage> {
       ],
     );
   }
+
+  @override
+  // TODO: implement wantKeepAlive
+  bool get wantKeepAlive => true;
 }

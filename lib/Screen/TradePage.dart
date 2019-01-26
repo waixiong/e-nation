@@ -15,12 +15,78 @@ import 'package:e_nation/Logic/TradeManager.dart';
 import 'package:e_nation/Screen/identityImage.dart';
 import 'package:e_nation/Screen/_FactoryCard.dart';
 
+class QRPage extends StatefulWidget{
+  QRPage({Key key, this.JSON, this.targetName, this.chosenResource, this.q, this.p, this.price, this.buyerImage});
+  String JSON;
+  String targetName;
+  String chosenResource;
+  int q;
+  double p;
+  double price;
+  Widget buyerImage;
+  Function dismiss;
+
+  _QRPage createState() => new _QRPage();
+}
+
+class _QRPage extends State<QRPage>{
+
+  @override
+  void initState(){
+    super.initState();
+    widget.dismiss = (){
+      print('ORPage : detect trade');
+      if(this.mounted){
+        print('is mounted');
+        Navigator.pop(context);
+      }
+    };
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // TODO: implement build
+    return new Container(
+      child: new Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: <Widget>[
+          new Text('Give ${widget.targetName} scan for executing this trade.', style: TextStyle(fontSize: 18,),textAlign: TextAlign.center,),
+          new Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: <Widget>[
+              new QrImage(
+                data: widget.JSON,
+                size: 200,
+                version: 12,
+                errorCorrectionLevel: 3,//QrErrorCorrectLevel{L, M, H, Q} in 'package:qr/qr.dart'
+              ),
+              new Column(
+                children: <Widget>[
+                  Padding(
+                    padding: EdgeInsets.only(bottom: 10),
+                    child: widget.buyerImage,
+                  ),
+                  new Text('${widget.chosenResource}'),
+                  new Text('${widget.q} @ \$${widget.price.toStringAsFixed(2)}'),
+                  new Text('Total \$${(widget.q*double.parse(widget.p.toStringAsFixed(2))).toStringAsFixed(2)}', style: TextStyle(fontWeight: FontWeight.w700),)
+                ],
+              ),
+            ],
+          )
+        ],
+      ),
+    );
+  }
+}
+
 class PrivateTrade extends StatefulWidget{
   PrivateTrade({Key key, this.nation, this.tradeManager, this.currentUser});
 
   Nation nation;
   TradeManager tradeManager;
   FirebaseUser currentUser;
+  StreamSubscription<bool> change;
+  StreamSubscription<bool> tele;
 
   _PrivateTradeState createState() => new _PrivateTradeState();
 }
@@ -30,9 +96,12 @@ class _PrivateTradeState extends State<PrivateTrade> with AutomaticKeepAliveClie
   int quantity = 0;
   String chosenNation = null;
   String chosenResource = null;
-  TextEditingController textController = TextEditingController();
+  TextEditingController quantityController = TextEditingController();
+  TextEditingController priceController = TextEditingController();
   double price = 0.00;
-  final _textKey = GlobalKey<FormState>();
+  final _priceKey = GlobalKey<FormState>();
+  final _quantityKey = GlobalKey<FormState>();
+  QRPage qr;
 
   @override
   // TODO: implement wantKeepAlive
@@ -41,7 +110,34 @@ class _PrivateTradeState extends State<PrivateTrade> with AutomaticKeepAliveClie
   @override
   void initState(){
     super.initState();
-    textController.addListener((){});
+    priceController.addListener((){});
+    quantityController.addListener((){});
+    if(widget.change == null){
+      widget.change = widget.tradeManager.privateScan.listen((t){
+        print('Trade Page : get');
+        if(qr != null){
+          print('Trade Page : scan');
+          qr.dismiss();
+        }
+        //Navigator.pop(context);
+      });
+    }else{
+      widget.change.resume();
+    }
+    if(widget.tele == null){
+      widget.tele = widget.nation.telecom.listen((t){
+        setState(() {});
+      });
+    }else{
+      widget.tele.resume();
+    }
+  }
+
+  @override
+  void dispose(){
+    widget.change.pause();
+    widget.tele.pause();
+    super.dispose();
   }
 
   Widget targetChooser(){
@@ -54,7 +150,7 @@ class _PrivateTradeState extends State<PrivateTrade> with AutomaticKeepAliveClie
             children: <Widget>[
               new Padding(
                 padding: EdgeInsets.only(right: 10),
-                child: new IdentityImage(size: 24, hash: value['hash']),
+                child: IdentityPhoto.fromUID(size: 24, uid: id, tradeManager: widget.tradeManager),
               ),
               new Text('${value['name']}')
             ],
@@ -84,53 +180,82 @@ class _PrivateTradeState extends State<PrivateTrade> with AutomaticKeepAliveClie
     );
   }
 
-  Widget resourceSlider(){
+  Widget resourceSlider(){//change from slider to text
     if(chosenResource == null)
       return new Card();
     int max = (widget.nation.resources[chosenResource] / 100).floor() * 100;
     return new Card(
-      child: new Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: <Widget>[
-          new Padding(
-            padding: EdgeInsets.all(20),
-            child: new Slider(
-              value: quantity.toDouble(),
-              min: 0,
-              max: max.toDouble(),
-              divisions: (max >= 100)? (max/100).toInt() : 1,
-              label: '${quantity.round()}',
-              onChanged: (double value){
-                setState(() {
-                  quantity = value.toInt();
-                });
-              },
-              activeColor: Colors.grey.shade500,
-            ),
-          ),
-          new Container(
-            padding: EdgeInsets.fromLTRB(0, 0, 0, 10),
-            width: MediaQuery.of(context).size.width * 0.6,
-            child: new Form(
-              key: _textKey,
-              child: new TextFormField(
-                keyboardType: TextInputType.number,
-                textAlign: TextAlign.right,
-                decoration: new InputDecoration(labelText: 'Price'),
-                autofocus: false,
-                validator: (value){
-                  try{
-                    price = double.parse(value);
-                    return null;
-                  }catch(e){
-                    return 'Please enter a two decimals place as price';
-                  }
-                },
-                controller: textController,
+      child: new Container(
+        width: MediaQuery.of(context).size.width,
+        child: new Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: <Widget>[
+//          new Padding(
+//            padding: EdgeInsets.all(20),
+//            child: new Slider(
+//              value: quantity.toDouble(),
+//              min: 0,
+//              max: max.toDouble(),
+//              divisions: (max >= 100)? (max/100).toInt() : 1,
+//              label: '${quantity.round()}',
+//              onChanged: (double value){
+//                setState(() {
+//                  quantity = value.toInt();
+//                });
+//              },
+//              activeColor: Colors.grey.shade500,
+//            ),
+//          ),
+            new Container(
+              padding: EdgeInsets.fromLTRB(0, 0, 0, 10),
+              width: MediaQuery.of(context).size.width * 0.6,
+              child: new Form(
+                onChanged: () => _quantityKey.currentState.validate(),
+                key: _quantityKey,
+                child: new TextFormField(
+                  keyboardType: TextInputType.number,
+                  textAlign: TextAlign.right,
+                  decoration: new InputDecoration(labelText: 'Quantity'),
+                  autofocus: false,
+                  validator: (value){
+                    try{
+                      quantity = int.parse(value);
+                      if(quantity > widget.nation.resources[chosenResource]){
+                        return 'Please enter available quantity\n${widget.nation.resources[chosenResource].toString()} or below';
+                      }
+                      return null;
+                    }catch(e){
+                      return 'Please enter a integer as quantity';
+                    }
+                  },
+                  controller: quantityController,
+                ),
               ),
             ),
-          )
-        ],
+            new Container(
+              padding: EdgeInsets.fromLTRB(0, 0, 0, 10),
+              width: MediaQuery.of(context).size.width * 0.6,
+              child: new Form(
+                key: _priceKey,
+                child: new TextFormField(
+                  keyboardType: TextInputType.number,
+                  textAlign: TextAlign.right,
+                  decoration: new InputDecoration(labelText: 'Price'),
+                  autofocus: false,
+                  validator: (value){
+                    try{
+                      price = double.parse(value);
+                      return null;
+                    }catch(e){
+                      return 'Please enter a two decimals place as price';
+                    }
+                  },
+                  controller: priceController,
+                ),
+              ),
+            )
+          ],
+        ),
       ),
     );
   }
@@ -158,11 +283,11 @@ class _PrivateTradeState extends State<PrivateTrade> with AutomaticKeepAliveClie
           child: new Row(
             children: <Widget>[
               new Expanded(
-                flex: 2,
+                flex: 1,
                 child: Text('Resources', style: new TextStyle(fontWeight: FontWeight.bold)),
               ),
               new Expanded(
-                flex: 3,
+                flex: 2,
                 child: new DropdownButton<String>(
                     value: chosenResource,
                     hint: new Text('Resource'),
@@ -187,59 +312,68 @@ class _PrivateTradeState extends State<PrivateTrade> with AutomaticKeepAliveClie
             child: RaisedButton(
               child: new Text('Generate QR Trade'),
               onPressed: chosenNation != null? (){
-                if(_textKey.currentState.validate()){
+                if(_priceKey.currentState.validate() && _quantityKey.currentState.validate()){
                   if(quantity <= 0){
+                    Scaffold.of(context).removeCurrentSnackBar();
                     Scaffold.of(context).showSnackBar(SnackBar(content: new Text('Please enter quantity')));
                   }else{
+                    String id = (Random.secure().nextDouble() * 9223372036854775807).floor().toRadixString(16);
+                    widget.tradeManager.privateTrade.add(id);
+                    //print(id);
                     Map<String, dynamic> ptrade = {
                       'seller': widget.currentUser.uid,
                       'buyer': chosenNation,
                       'resource': chosenResource,
                       'quantity': quantity,
-                      'price': price
+                      'price': price,
+                      'id': id
                     };
+                    print(id + ' ready to scan');
                     String JSON = json.encode(ptrade);
                     int q = quantity;
                     double p = price;
+                    qr = new QRPage(JSON: JSON, targetName: widget.tradeManager.nationList[chosenNation]['name'], chosenResource: chosenResource, p: p, q: q, price: price, buyerImage: IdentityPhoto.fromUID(size: 80, uid: chosenNation, tradeManager: widget.tradeManager),);
                     showModalBottomSheet<void>(
                       context: context,
                       builder: (BuildContext context){
-                        return new Container(
-                          child: new Column(
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: <Widget>[
-                              new Text('Give ${widget.tradeManager.nationList[chosenNation]['name']} scan for executing this trade.', style: TextStyle(fontSize: 18,),textAlign: TextAlign.center,),
-                              new Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                                children: <Widget>[
-                                  new QrImage(
-                                    data: JSON,
-                                    size: 240,
-                                    version: 12,
-                                    errorCorrectionLevel: 3,//QrErrorCorrectLevel{L, M, H, Q} in 'package:qr/qr.dart'
-                                    onError: (ex) {
-                                      print("[QR] ERROR - $ex");
-                                      setState(() {
-                                        print("Error! Maybe your input value is too long?");
-                                      });
-                                    },
-                                  ),
-                                  new Column(
-                                    children: <Widget>[
-                                      new Text('${chosenResource}'),
-                                      new Text('${q}@\$${price.toStringAsFixed(2)}'),
-                                      new Text('Total \$${(q*double.parse(p.toStringAsFixed(2))).toStringAsFixed(2)}')
-                                    ],
-                                  ),
-                                ],
-                              )
-                            ],
-                          ),
-                        );
+                        return qr;
+//                        return new Container(
+//                          child: new Column(
+//                            crossAxisAlignment: CrossAxisAlignment.center,
+//                            children: <Widget>[
+//                              new Text('Give ${widget.tradeManager.nationList[chosenNation]['name']} scan for executing this trade.', style: TextStyle(fontSize: 18,),textAlign: TextAlign.center,),
+//                              new Row(
+//                                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+//                                children: <Widget>[
+//                                  new QrImage(
+//                                    data: JSON,
+//                                    size: 240,
+//                                    version: 12,
+//                                    errorCorrectionLevel: 3,//QrErrorCorrectLevel{L, M, H, Q} in 'package:qr/qr.dart'
+//                                    onError: (ex) {
+//                                      print("[QR] ERROR - $ex");
+//                                      setState(() {
+//                                        print("Error! Maybe your input value is too long?");
+//                                      });
+//                                    },
+//                                  ),
+//                                  new Column(
+//                                    children: <Widget>[
+//                                      new Text('${chosenResource}'),
+//                                      new Text('${q}@\$${price.toStringAsFixed(2)}'),
+//                                      new Text('Total \$${(q*double.parse(p.toStringAsFixed(2))).toStringAsFixed(2)}')
+//                                    ],
+//                                  ),
+//                                ],
+//                              )
+//                            ],
+//                          ),
+//                        );
                       }
                     );
                     setState(() {
                       quantity = 0;
+                      quantityController.text = '';
                     });
                   }
                 }
@@ -257,18 +391,24 @@ class _PrivateTradeState extends State<PrivateTrade> with AutomaticKeepAliveClie
                     .setHandlePermissions(true) // default true
                     .setExecuteAfterPermissionGranted(true) // default true
                     .scan();
-                print(JSON);
-                Map<dynamic, dynamic> scanTrade = json.decode(JSON);
-                if(scanTrade['buyer'] == widget.currentUser.uid){
-                  if(widget.nation.resources['Money'] < scanTrade['quantity'] * scanTrade['price'])
-                    Scaffold.of(context).showSnackBar(SnackBar(content: new Text('\$${scanTrade['price'] * scanTrade['quantity']} needed for trade')));
-                  else{
-                    String id = (Random.secure().nextDouble() * 9223372036854775807).floor().toRadixString(16);
-                    if(await widget.nation.privateTrade(id, scanTrade))
-                      Scaffold.of(context).showSnackBar(SnackBar(content: new Text('Success')));
+                //print(JSON);
+                if(JSON != null){
+                  Map<dynamic, dynamic> scanTrade = json.decode(JSON);
+                  if(scanTrade['buyer'] == widget.currentUser.uid){
+                    if(widget.nation.resources['Money'] < scanTrade['quantity'] * scanTrade['price']) {
+                      Scaffold.of(context).hideCurrentSnackBar();
+                      Scaffold.of(context).showSnackBar(SnackBar(content: new Text('\$${scanTrade['price'] * scanTrade['quantity']} needed for trade')));
+                    }else{
+                      String id = scanTrade['id'];
+                      scanTrade.remove('id');
+                      if(await widget.nation.privateTrade(id, scanTrade))
+                        Scaffold.of(context).hideCurrentSnackBar();
+                      Scaffold.of(context).showSnackBar(SnackBar(content: new Text('Executing...')));
+                    }
+                  }else{
+                    Scaffold.of(context).hideCurrentSnackBar();
+                    Scaffold.of(context).showSnackBar(SnackBar(content: new Text('You are NOT the buyer of this trade', style: TextStyle(color: Colors.red),)));
                   }
-                }else{
-                  Scaffold.of(context).showSnackBar(SnackBar(content: new Text('You are NOT the buyer of this trade', style: TextStyle(color: Colors.red),)));
                 }
               },
               child: Text('Scan QR Trade'),
@@ -281,7 +421,7 @@ class _PrivateTradeState extends State<PrivateTrade> with AutomaticKeepAliveClie
     return new Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       mainAxisAlignment: MainAxisAlignment.center,
-      children: columnList,
+      children: widget.nation.specialBuilding['Telecommunication']['level'] > 0? columnList : <Widget>[new Text('Upgrade Telecommunication to \nlevel 1 to unlock private trade', style: TextStyle(fontSize: 16, color: Colors.white),)],
     );
   }
 }
@@ -320,10 +460,26 @@ class _TradeExecutionMakerDialog extends State<TradeExecutionMakerDialog>{
                   new TextFormField(
                     keyboardType: TextInputType.number,
                     textAlign: TextAlign.right,
+                    decoration: new InputDecoration(labelText: 'Price'),
+                    validator: (value){
+                      try{
+                        price = double.parse(value);
+                        print(price);
+                        return null;
+                      }catch(e){
+                        return 'Please enter a two decimals place as price';
+                      }
+                    },
+                    controller: priceController,
+                  ),
+                  new TextFormField(
+                    keyboardType: TextInputType.number,
+                    textAlign: TextAlign.right,
                     decoration: new InputDecoration(labelText: 'Quantity'),
                     validator: (value){
                       try{
                         quantity = int.parse(value);
+                        print(widget.nation.resources['Money']/price);
                         if(widget.bid){
                           if(price >= 0)
                             if(widget.nation.resources['Money']/price < quantity)
@@ -338,20 +494,6 @@ class _TradeExecutionMakerDialog extends State<TradeExecutionMakerDialog>{
                       }
                     },
                     controller: quantityController,
-                  ),
-                  new TextFormField(
-                    keyboardType: TextInputType.number,
-                    textAlign: TextAlign.right,
-                    decoration: new InputDecoration(labelText: 'Price'),
-                    validator: (value){
-                      try{
-                        price = double.parse(value);
-                        return null;
-                      }catch(e){
-                        return 'Please enter a two decimals place as price';
-                      }
-                    },
-                    controller: priceController,
                   )
                 ],
               )
@@ -369,6 +511,14 @@ class _TradeExecutionMakerDialog extends State<TradeExecutionMakerDialog>{
                 if(_textKey.currentState.validate()){
                   String id = (Random.secure().nextDouble() * 9223372036854775807).floor().toRadixString(16);
                   bool success = await widget.nation.publicTradeMaker(widget.bid, quantity, price, widget.resource, id);
+//                  List<bool> s = [];
+//                  for(int i = 0; i < 10; i++){
+//                    String id = (Random.secure().nextDouble() * 9223372036854775807).floor().toRadixString(16);
+//                    bool success = await widget.nation.publicTradeMaker(widget.bid, quantity, price, widget.resource, id);
+//                    s.add(success);
+//                  }
+//                  bool success = true;
+//                  s.forEach((t){ if(!t) success = false; });
                   if(success)
                     Navigator.pop(context);
                   else {
@@ -402,6 +552,7 @@ class TradeExecutionTakerDialog extends StatefulWidget{
   bool buy;
   Map<dynamic, dynamic> makerData;
   String makerKey;
+  Function checkTrade;
   @override
   _TradeExecutionTakerDialog createState() => new _TradeExecutionTakerDialog();
 }
@@ -412,9 +563,31 @@ class _TradeExecutionTakerDialog extends State<TradeExecutionTakerDialog>{
   int quantity = 0;
   final _textKey = GlobalKey<FormState>();
 
+  @override
+  void initState(){
+    super.initState();
+    widget.checkTrade = (String key){
+      print('The deleted key is '+key);
+      if(this.mounted){
+        if(key == widget.makerKey){
+          Navigator.pop(context);
+          showDialog(
+              context: context,
+              builder: (BuildContext context){
+                return AlertDialog(
+                  title: new Text('WARNING'),
+                  content: new Text('The trade is delete by the owner'),
+                );
+              }
+          );
+        }
+      }
+    };
+  }
+
   Widget identity(String id){
     return widget.tradeManager.nationList.containsKey(id)?
-    new IdentityImage(size: 60, hash: widget.tradeManager.nationList[id]['hash'])
+    IdentityPhoto.fromUID(size: 60, uid: id, tradeManager: widget.tradeManager)
         : new IdentityImage(size: 60, hash: 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF');
   }
 
@@ -492,7 +665,7 @@ class _TradeExecutionTakerDialog extends State<TradeExecutionTakerDialog>{
               onPressed: () async {
                 if(_textKey.currentState.validate()){
                   String id = (Random.secure().nextDouble() * 9223372036854775807).floor().toRadixString(16);
-                  bool success = await widget.nation.publicTradeTaker(widget.buy, quantity, widget.resource, id, widget.makerData, widget.makerKey);
+                  bool success = await widget.nation.publicTradeTaker(widget.buy, quantity, widget.resource, id, json.decode(json.encode(widget.makerData)), widget.makerKey);
                   if(success)
                     Navigator.pop(context);
                   else {
@@ -580,6 +753,8 @@ class _TradeResourceState extends State<TradeResource>{
 
   List<String> asks;
   List<String> bids;
+  TradeExecutionTakerDialog dialog;
+  ScaffoldState _scaffoldState;
 
   @override
   void initState() {
@@ -609,8 +784,13 @@ class _TradeResourceState extends State<TradeResource>{
       widget.tradeManager.tradeQueue[widget.resource]['Ask'][event.snapshot.key] = event.snapshot.value; setState(() {});
     });
     A.onChildRemoved.listen((event){
+      print(event.snapshot.key + ' is cancel');
       widget.tradeManager.tradeQueue[widget.resource]['Ask'].remove(event.snapshot.key); setState(() {});
       asks.remove(event.snapshot.key);
+      if(dialog != null){
+        print(event.snapshot.key + ' is cancel');
+        dialog.checkTrade(event.snapshot.key);
+      }
     });
     DatabaseReference B = FirebaseDatabase.instance.reference().child('trade/${widget.resource}/Bid');
     B.onChildAdded.listen((event){
@@ -636,6 +816,9 @@ class _TradeResourceState extends State<TradeResource>{
     B.onChildRemoved.listen((event){
       widget.tradeManager.tradeQueue[widget.resource]['Bid'].remove(event.snapshot.key); setState(() {});
       bids.remove(event.snapshot.key);
+      if(dialog != null){
+        dialog.checkTrade(event.snapshot.key);
+      }
     });
     DatabaseReference data = FirebaseDatabase.instance.reference().child('trade/${widget.resource}/data');
     data.onChildAdded.listen((event){
@@ -650,7 +833,7 @@ class _TradeResourceState extends State<TradeResource>{
 
   Widget identity(String id){
     return widget.tradeManager.nationList.containsKey(id)?
-    new IdentityImage(size: 24, hash: widget.tradeManager.nationList[id]['hash'])
+    IdentityPhoto.fromUID(size: 24, uid: id, tradeManager: widget.tradeManager)
         : new IdentityImage(size: 24, hash: 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF');
   }
 
@@ -694,7 +877,7 @@ class _TradeResourceState extends State<TradeResource>{
                             return new TradeExecutionMakerDialog(resource: widget.resource, nation: widget.nation, bid: true,);
                           }
                         );
-                      }, child: Text('Bid')),
+                      }, child: Text('Buy')),
                       Text('${widget.tradeManager.trade[widget.resource]['LastDone'].toStringAsFixed(2)}', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),),
                       new OutlineButton(onPressed: (){
                         showDialog(
@@ -703,7 +886,7 @@ class _TradeResourceState extends State<TradeResource>{
                             return new TradeExecutionMakerDialog(resource: widget.resource, nation: widget.nation, bid: false,);
                           }
                         );
-                      }, child: Text('Ask'))
+                      }, child: Text('Sell'))
                     ],
                   )
                 ],
@@ -753,7 +936,7 @@ class _TradeResourceState extends State<TradeResource>{
                                   child: InkWell(onTap: widget.tradeManager.tradeQueue[widget.resource]['Bid'][bids[index]]['buyer'] != widget.nation.currentUser.uid? (){ showDialog(
                                       context: context,
                                       builder: (BuildContext context){
-                                        return new TradeExecutionTakerDialog(
+                                        dialog = new TradeExecutionTakerDialog(
                                             resource: widget.resource,
                                             nation: widget.nation,
                                             tradeManager: widget.tradeManager,
@@ -761,6 +944,7 @@ class _TradeResourceState extends State<TradeResource>{
                                             makerData: widget.tradeManager.tradeQueue[widget.resource]['Bid'][bids[index]],
                                             makerKey: bids[index]
                                         );
+                                        return dialog;
                                       }
                                   ); } : (){
                                     showDialog(
@@ -772,7 +956,14 @@ class _TradeResourceState extends State<TradeResource>{
                                       if(react){
                                         widget.nation.cancelMaker(true, widget.resource, bids[index]).then((done){
                                           if(done){
-                                            Scaffold.of(context).showSnackBar(SnackBar(content: new Text('Trade has been cancelled')));
+                                            Scaffold.of(context).hideCurrentSnackBar();
+                                            Scaffold.of(context).showSnackBar(
+                                              SnackBar(
+                                                content: new Text('Trade has been cancelled'),
+                                                duration: Duration(seconds: 2),
+                                                //action: SnackBarAction(label: 'DISMISS', textColor: Colors.white, onPressed: (){ Scaffold.of(context).hideCurrentSnackBar(); }),
+                                              )
+                                            );
                                           }
                                         });
                                       }
@@ -823,7 +1014,7 @@ class _TradeResourceState extends State<TradeResource>{
                                   child: InkWell(onTap: widget.tradeManager.tradeQueue[widget.resource]['Ask'][asks[index]]['seller'] != widget.nation.currentUser.uid? (){ showDialog(
                                       context: context,
                                       builder: (BuildContext context){
-                                        return new TradeExecutionTakerDialog(
+                                        dialog = new TradeExecutionTakerDialog(
                                             resource: widget.resource,
                                             nation: widget.nation,
                                             tradeManager: widget.tradeManager,
@@ -831,18 +1022,27 @@ class _TradeResourceState extends State<TradeResource>{
                                             makerData: widget.tradeManager.tradeQueue[widget.resource]['Ask'][asks[index]],
                                             makerKey: asks[index]
                                         );
+                                        return dialog;
                                       }
                                   ); } : (){
+                                    String cancelID = asks[index];
                                     showDialog(
                                       context: context,
                                       builder: (BuildContext context){
-                                        return new TradeCancel(resource: widget.resource, bid: false, detail: widget.tradeManager.tradeQueue[widget.resource]['Ask'][asks[index]]);
+                                        return new TradeCancel(resource: widget.resource, bid: false, detail: widget.tradeManager.tradeQueue[widget.resource]['Ask'][cancelID]);
                                       }
                                     ).then((react){
                                       if(react){
-                                        widget.nation.cancelMaker(false, widget.resource, asks[index]).then((done){
+                                        widget.nation.cancelMaker(false, widget.resource, cancelID).then((done){
                                           if(done){
-                                            Scaffold.of(context).showSnackBar(SnackBar(content: new Text('Trade has been cancelled')));
+                                            Scaffold.of(context).hideCurrentSnackBar();
+                                            Scaffold.of(context).showSnackBar(
+                                              SnackBar(
+                                                content: new Text('Trade has been cancelled'),
+                                                duration: Duration(seconds: 2),
+                                                //action: SnackBarAction(label: 'DISMISS', textColor: Colors.white, onPressed: (){ Scaffold.of(context).hideCurrentSnackBar(); }),
+                                              )
+                                            );
                                           }
                                         });
                                       }
@@ -930,12 +1130,18 @@ class _TradeCardState extends State<TradeCard> with AutomaticKeepAliveClientMixi
                     children: <Widget>[
                       new Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        children: <Widget>[Text('Bid'), Text('${bid != null && bid != 0? bid.toStringAsFixed(2) : '--'}')],
+                        children: <Widget>[Text('Buy'), Text('${bid != null && bid != 0? bid.toStringAsFixed(2) : '--'}')],
                       ),
-                      Text('${widget.tradeManager.trade[widget.resource]['LastDone'].toStringAsFixed(2)}', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),),
+                      new Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: <Widget>[
+                          Text('${widget.tradeManager.trade[widget.resource]['LastDone'].toStringAsFixed(2)}', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),),
+                          Text('Domestic Price : ${widget.tradeManager.master.resources[widget.resource]['price'].toStringAsFixed(2)}')
+                        ],
+                      ),
                       new Column(
                         crossAxisAlignment: CrossAxisAlignment.end,
-                        children: <Widget>[Text('Ask'), Text('${ask != null && ask != 0? ask.toStringAsFixed(2) : '--'}')],
+                        children: <Widget>[Text('Sell'), Text('${ask != null && ask != 0? ask.toStringAsFixed(2) : '--'}')],
                       )
                     ],
                   )
@@ -970,6 +1176,7 @@ class TradePage extends StatefulWidget {
   Nation nation;
   TradeManager tradeManager;
   //var orderList = <DataSnapshot>[];
+  PrivateTrade _privateTrade;
 
   @override
   _TradePageState createState() => new _TradePageState(auth: auth);
@@ -989,35 +1196,132 @@ class _TradePageState extends State<TradePage> with SingleTickerProviderStateMix
   TabController _tabController;
   static const _tabs = <Tab>[
     Tab(icon: Icon(Icons.cloud), text: 'PUBLIC',),
+    //Tab(icon: Icon(Icons.cloud), text: 'PUBLIC\nResources',),
+    //Tab(icon: Icon(Icons.cloud), text: 'PUBLIC\nProduct',),
     Tab(icon: Icon(Icons.forum), text: 'PRIVATE',)
   ];
   List<Widget>_tabPages;
+  PrivateTrade _privateTrade;
+  PageController _publicPageController;
+  PageView _publicPage;
 
   @override
   void initState(){
     // TODO: implement initState
     super.initState();
+    //print(widget.tradeManager.nationList);
     loading = true;
     chosenResource = null;
-    _tabPages = <Widget>[
-      publicTrade(),
-      privateTrade(),
-    ];
+    if(widget._privateTrade == null){
+      widget._privateTrade = privateTrade();
+    }
+    _publicPageController = PageController(
+        initialPage: 0,
+        keepPage: true
+    );
+    _publicPage = PageView(
+      physics: NeverScrollableScrollPhysics(),
+      controller: _publicPageController,
+      children: <Widget>[
+        publicResourcesTrade(),
+        publicProductTrade()
+      ],
+    );
+//    _tabPages = <Widget>[
+//      publicTrade(),
+//      //publicResourcesTrade(),
+//      //publicProductTrade(),
+//      widget._privateTrade,
+//    ];
     _tabController = TabController(length: _tabs.length, vsync: this);
     print('init TradePage');
   }
 
   @override
+  void deactivate() {
+    // TODO: implement deactivate
+    super.deactivate();
+    print('deactivate trade');
+  }
+
+  @override
+  void dispose(){
+    print('dispose trade');
+    //widget.change.pause();// remove to deactivate()
+    super.dispose();
+    //print('Home dispose ' + widget.change.isPaused.toString());
+  }
+
+  @override
   bool get wantKeepAlive => true;
 
-  Widget publicTrade(){
+  Widget publicTrade(BuildContext context){
+    return Column(
+      children: <Widget>[
+        new Container(
+          height: 50,
+          child: new Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: <Widget>[
+              new Container(
+                width: MediaQuery.of(context).size.width * 0.4,
+                child: OutlineButton(
+                  onPressed: (){
+                    setState(() { _publicPageController.jumpToPage(0); });
+                  },
+                  shape: new RoundedRectangleBorder(borderRadius: new BorderRadius.circular(25.0)),
+                  child: Text('RESOURCE', style: TextStyle(color: Colors.white),),
+                ),
+              ),
+              new Container(
+                width: MediaQuery.of(context).size.width  * 0.4,
+                child: OutlineButton(
+                  onPressed: (){
+                    setState(() { _publicPageController.jumpToPage(1); });
+                  },
+                  shape: new RoundedRectangleBorder(borderRadius: new BorderRadius.circular(25.0)),
+                  child: Text('PRODUCT', style: TextStyle(color: Colors.white),),
+                ),
+              )
+            ],
+          ),
+        ),
+        new Expanded(
+          child: _publicPage,
+        )
+      ],
+    );
+//    return new ListView.builder(
+//      scrollDirection: Axis.vertical,
+//      shrinkWrap: true,
+//      padding: const EdgeInsets.all(10.0),
+//      itemCount: 22,
+//      itemBuilder: (BuildContext context, int index){
+//        return new TradeCard(resource: widget.nation.master.resourcesOrder[index], imgPath: widget.nation.master.resources[widget.nation.master.resourcesOrder[index]]['img'], tradeManager: widget.tradeManager, nation: widget.nation,);
+//      },
+//    );
+  }
+
+  Widget publicResourcesTrade(){
     return new ListView.builder(
       scrollDirection: Axis.vertical,
       shrinkWrap: true,
       padding: const EdgeInsets.all(10.0),
-      itemCount: 22,
+      itemCount: 11,
       itemBuilder: (BuildContext context, int index){
         return new TradeCard(resource: widget.nation.master.resourcesOrder[index], imgPath: widget.nation.master.resources[widget.nation.master.resourcesOrder[index]]['img'], tradeManager: widget.tradeManager, nation: widget.nation,);
+      },
+    );
+  }
+
+  Widget publicProductTrade(){
+    return new ListView.builder(
+      scrollDirection: Axis.vertical,
+      shrinkWrap: true,
+      padding: const EdgeInsets.all(10.0),
+      itemCount: 11,
+      itemBuilder: (BuildContext context, int index){
+        return new TradeCard(resource: widget.nation.master.resourcesOrder[index+11], imgPath: widget.nation.master.resources[widget.nation.master.resourcesOrder[index+11]]['img'], tradeManager: widget.tradeManager, nation: widget.nation,);
       },
     );
   }
@@ -1037,7 +1341,10 @@ class _TradePageState extends State<TradePage> with SingleTickerProviderStateMix
       body: new Container(
         decoration: BoxDecoration(color: Colors.grey.shade800),
         child: TabBarView(
-          children: _tabPages,
+          children: <Widget>[
+            publicTrade(context),
+            widget._privateTrade
+          ],
           controller: _tabController,
         ),
       ),

@@ -60,35 +60,54 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin<
   void initState(){
     // TODO: implement initState
     super.initState();
+    print('init home');
     //load user doc
     //loadUserDoc();
     widget.refresh = (){
       if(this.mounted) setState(() {
-        print('Mounted, update HomePage');
+        //print('Mounted, update HomePage');
       });
-      else
-        print('Unmounted, cant update HomePage');
+//      else
+//        print('Unmounted, cant update HomePage');
     };
     if(widget.change == null) {
       widget.change = widget.nation.homeRefresh.listen((data) {
-        setState(() {});
+        if(this.mounted) {
+          setState(() {});
+        }
       });
     }else{
       widget.change.resume();
     }
+
+  }
+
+  @override
+  void deactivate(){
+    print('deactivate home');
+//    if(!widget.change.isPaused){
+//      print('deactivate home');
+//      widget.change.pause();
+//      super.deactivate();
+//    }else{
+//      super.deactivate();
+//      print('reactivate home');
+//      widget.change.resume();
+//    }
   }
 
   @override
   void dispose(){
-    widget.change.pause();
+    print('dispose home');
+    widget.change.pause();// remove to deactivate()
     super.dispose();
-    print('Home dispose ' + widget.change.isPaused.toString());
+    //print('Home dispose ' + widget.change.isPaused.toString());
   }
 
   //LOGOUT METHOD
   void logout(BuildContext context){
     print('logout method in development');
-//    auth.signOut();
+    auth.signOut();
     Navigator.pushAndRemoveUntil(context, new MaterialPageRoute(builder: (context) => new LoginPage()), ModalRoute.withName(Navigator.defaultRouteName));
   }
 
@@ -100,7 +119,7 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin<
           padding: EdgeInsets.only(left: 4, right: 4),
           child: new Icon(Icons.access_time),
         ),
-        new Text('Session ${widget.nation.session}')
+        new Text('Session ${widget.nation.session}-${widget.nation.sessionPart? 'C':'P'}')
       ],)));
     bar.add(new Expanded(child: new Row(
       children: <Widget>[
@@ -191,22 +210,27 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin<
   }
 
   Widget comsumptionList(BuildContext context){
-    print(widget.nation.comsumptionDemand);
+    //print(widget.nation.comsumptionDemand);
+    //print('consumption rerender');
     List<Widget> comsumeColumn = new List<Widget>();
     List<Widget> row = new List<Widget>();
     widget.nation.comsumptionDemand.forEach((resource, value){
-      row.add(new ItemComsumption(
-        size: 58, color: widget.nation.comsumptionSupply.containsKey(resource)? (widget.nation.comsumptionSupply[resource] >= value? Colors.green : Colors.red) : Colors.red, demand: value,
-        resImg: widget.nation.master.resources[resource]['img'],
-        onPress: (){
-          showDialog(
-            context: context,
-            builder: (BuildContext context){
-              return new ComsumptionSlider(nation: widget.nation, resource: resource,);
-            }
-          );
-        },
-      ));
+      int mValue = widget.nation.minD[resource];
+      if(value > 0){
+        //print(resource + ' ' + (widget.nation.comsumptionSupply.containsKey(resource)? (widget.nation.comsumptionSupply[resource] >= value? Colors.green : (widget.nation.comsumptionSupply[resource] >= mValue? Colors.orange : Colors.red)) : Colors.red).toString());
+        row.add(new ItemComsumption(
+          size: 58, color: widget.nation.comsumptionSupply.containsKey(resource)? (widget.nation.comsumptionSupply[resource] >= value? Colors.green : (widget.nation.comsumptionSupply[resource] >= mValue? Colors.orange : Colors.red)) : Colors.red, demand: mValue,
+          resImg: widget.nation.master.resources[resource]['img'],
+          onPress: (){
+            showDialog(
+                context: context,
+                builder: (BuildContext context){
+                  return new ComsumptionSlider(nation: widget.nation, resource: resource,);
+                }
+            );
+          },
+        ));
+      }
       if(row.length >= 6){
         comsumeColumn.add(new Row(
           children: new List.from(row),
@@ -219,8 +243,21 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin<
         children: new List.from(row),
       ));
     }
+    //calculate food
+    bool enough = true;
+    if(widget.nation.sessionPart){
+      int foodSupply = 0;
+      widget.nation.master.foodList.forEach((food){
+        print(food+' '+widget.nation.master.resources[food]['feed'].toString());
+        foodSupply += (widget.nation.comsumptionSupply[food]?? 0) * widget.nation.master.resources[food]['feed'];
+      });
+      print('food supply ' + foodSupply.toString());
+      if(foodSupply < widget.nation.human)
+        enough = false;
+    }
+    //calculate food
     return Container(
-      height: 410,
+      height: MediaQuery.of(context).size.height - 80 - 150,
       child: new Column(
         children: <Widget>[
           new Card(
@@ -231,13 +268,13 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin<
                 child: new Stack(
                   children: <Widget>[
                     new Container(
-                      width: 360,
+                      width: MediaQuery.of(context).size.width,
                       child: new Column(
                         crossAxisAlignment: CrossAxisAlignment.center,
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: <Widget>[
                           new Icon(Icons.people, size: 80, color: Colors.black54,),
-                          new Text('${widget.nation.human}', style: TextStyle(fontSize: 36, fontWeight: FontWeight.bold),)
+                          new PopulationText(population: widget.nation.human, enough: enough,)
                         ],
                       ),
                     ),
@@ -277,17 +314,37 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin<
   }
 
   Widget factoryGrid(BuildContext context){
+    List<String> resources1 = ['Wood', 'Sand', 'Steel', 'Rubber', 'Cotton', 'Oil'];
+    List<String> r = ['Leather'];
+    List<String> resources2 = ['Copper', 'Silver', 'Vegetable', 'Meat'];
+    List<String> products1 = ['Car', 'Shirt', 'Processed Vegetable', 'Processed Meat'];
+    List<String> p = ['Solar Panel'];
+    List<String> products2 = ['Furniture', 'Jewellery', 'Gloves', 'Bag', 'Gadget', 'Book'];
     return Container(
       //height: 450,
       child: CustomScrollView(
         slivers: <Widget>[
           SliverSafeArea(
+            sliver: SliverList(
+              delegate: SliverChildListDelegate([
+                Card(
+                  child: new Container(
+                    height: 100,
+                    child: Center(
+                      child: Text('RESOURCES', textAlign: TextAlign.center, style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800),),
+                    ),
+                  ),
+                ),
+              ],),
+            ),
+          ),
+          SliverSafeArea(
             top: false,
             minimum: const EdgeInsets.all(8.0),
             sliver: SliverGrid(
-              gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(maxCrossAxisExtent: 200.0),
+              gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(maxCrossAxisExtent: MediaQuery.of(context).size.width/2),
               delegate: SliverChildListDelegate(
-                widget.nation.master.resourcesOrder.map<Widget>((String resource) {
+                resources1.map<Widget>((String resource) {
                   return FactoryCard(
                     resource: resource,
                     factoryIndex: 0,
@@ -301,6 +358,121 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin<
               ),
             ),
           ),
+          SliverSafeArea(
+            top: true,
+            minimum: const EdgeInsets.all(8.0),
+            sliver: SliverList(
+              //gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(maxCrossAxisExtent: MediaQuery.of(context).size.width/2),
+              delegate: SliverChildListDelegate(
+                r.map<Widget>((String resource) {
+                  return FactoryCard(
+                    resource: resource,
+                    factoryIndex: 0,
+                    factoryData: null,
+                    facImg: widget.nation.master.building[resource]['img'],
+                    tag: resource,
+                    resImg: widget.nation.master.resources[resource]['img'],
+                    onPressed: () { factoryInputDialog(resource);},
+                  );
+                }).toList(),
+              ),
+            ),
+          ),
+          SliverSafeArea(
+            top: true,
+            minimum: const EdgeInsets.all(8.0),
+            sliver: SliverGrid(
+              gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(maxCrossAxisExtent: MediaQuery.of(context).size.width/2),
+              delegate: SliverChildListDelegate(
+                resources2.map<Widget>((String resource) {
+                  return FactoryCard(
+                    resource: resource,
+                    factoryIndex: 0,
+                    factoryData: null,
+                    facImg: widget.nation.master.building[resource]['img'],
+                    tag: resource,
+                    resImg: widget.nation.master.resources[resource]['img'],
+                    onPressed: () { factoryInputDialog(resource);},
+                  );
+                }).toList(),
+              ),
+            ),
+          ),
+          //PRODUCT
+          SliverSafeArea(
+            sliver: SliverList(
+              delegate: SliverChildListDelegate([
+                Card(
+                  child: new Container(
+                    height: 100,
+                    child: Center(
+                      child: Text('PRODUCTS', textAlign: TextAlign.center, style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800),),
+                    ),
+                  ),
+                ),
+              ],),
+            ),
+          ),
+          SliverSafeArea(
+            top: true,
+            minimum: const EdgeInsets.all(8.0),
+            sliver: SliverGrid(
+              gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(maxCrossAxisExtent: MediaQuery.of(context).size.width/2),
+              delegate: SliverChildListDelegate(
+                products1.map<Widget>((String resource) {
+                  return FactoryCard(
+                    resource: resource,
+                    factoryIndex: 0,
+                    factoryData: null,
+                    facImg: widget.nation.master.building[resource]['img'],
+                    tag: resource,
+                    resImg: widget.nation.master.resources[resource]['img'],
+                    onPressed: () { factoryInputDialog(resource);},
+                  );
+                }).toList(),
+              ),
+            ),
+          ),
+          SliverSafeArea(
+            top: true,
+            minimum: const EdgeInsets.all(8.0),
+            sliver: SliverList(
+              //gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(maxCrossAxisExtent: MediaQuery.of(context).size.width/2),
+              delegate: SliverChildListDelegate(
+                p.map<Widget>((String resource) {
+                  return FactoryCard(
+                    resource: resource,
+                    factoryIndex: 0,
+                    factoryData: null,
+                    facImg: widget.nation.master.building[resource]['img'],
+                    tag: resource,
+                    resImg: widget.nation.master.resources[resource]['img'],
+                    onPressed: () { factoryInputDialog(resource);},
+                  );
+                }).toList(),
+              ),
+            ),
+          ),
+          SliverSafeArea(
+            top: true,
+            minimum: const EdgeInsets.all(8.0),
+            sliver: SliverGrid(
+              gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(maxCrossAxisExtent: MediaQuery.of(context).size.width/2),
+              delegate: SliverChildListDelegate(
+                products2.map<Widget>((String resource) {
+                  return FactoryCard(
+                    resource: resource,
+                    factoryIndex: 0,
+                    factoryData: null,
+                    facImg: widget.nation.master.building[resource]['img'],
+                    tag: resource,
+                    resImg: widget.nation.master.resources[resource]['img'],
+                    onPressed: () { factoryInputDialog(resource);},
+                  );
+                }).toList(),
+              ),
+            ),
+          )
         ],
       ),
     );
@@ -347,16 +519,18 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin<
     // The Flutter framework has been optimized to make rerunning build methods
     // fast, so that you can just rebuild anything that needs updating rather
     // than having to individually change instances of widgets.
+    //print('render '+this.mounted.toString());
     return new Column(
       children: <Widget>[
         mainBar(context),
         resourcesBar(context),
         new Container(
-          height: MediaQuery.of(context).size.height - 196,
+          height: MediaQuery.of(context).size.height - 198.5,
           child: new PageView(
             scrollDirection: Axis.horizontal,
             controller: PageController(
               initialPage: 0,
+              keepPage: false
             ),
             children: <Widget>[
               comsumptionList(context),

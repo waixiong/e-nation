@@ -47,11 +47,12 @@ class _GDPCardState extends State<GDPCard> {
   void getSeriesGDP(){
     GDPSeriesList = new List<charts.Series<dynamic, int>>();
     GDPSeriesList.add(new charts.Series(
-      id: 'Comsumption',
+      id: 'Consumption',
       data: widget.nation.historyData.GDP,
       domainFn: (dynamic data, _) => data['session'],
       measureFn: (dynamic data, _) => data['comsumption'],
     ));
+    List<dynamic> defaultGDP = <dynamic>[{'session': 0, 'comsumption': 0, 'export': 0, 'import': 0}];
 //    GDPSeriesList.add(new charts.Series(
 //      id: 'Trade Balance',
 //      data: widget.nation.historyData.GDP,
@@ -60,7 +61,7 @@ class _GDPCardState extends State<GDPCard> {
 //    ));
     GDPSeriesList.add(new charts.Series(
       id: 'GDP',
-      data: widget.nation.historyData.GDP,
+      data: widget.nation.historyData.GDP.length > 0? widget.nation.historyData.GDP : defaultGDP,
       domainFn: (dynamic data, _) => data['session'],
       measureFn: (dynamic data, _) => data['comsumption'] + data['export'] - data['import'],
     ));
@@ -80,7 +81,7 @@ class _GDPCardState extends State<GDPCard> {
     if (selectedDatum.isNotEmpty) {
       session = selectedDatum.first.datum['session'];
       selectedDatum.forEach((charts.SeriesDatum datumPair) {
-        if(datumPair.series.id == 'Comsumption')
+        if(datumPair.series.id == 'Consumption')
           measures[datumPair.series.id] = datumPair.datum['comsumption'];
         else if(datumPair.series.id == 'GDP'){
           measures[datumPair.series.id] = datumPair.datum['comsumption'] + datumPair.datum['export'] - datumPair.datum['import'];
@@ -117,7 +118,7 @@ class _GDPCardState extends State<GDPCard> {
     ));
     if(_session != null){
       contains.add(new Text('Session ${_session}'));
-      contains.add(new Text('Comsumption : ${_data['Comsumption']}'));
+      contains.add(new Text('Consumption : ${_data['Consumption']}'));
       contains.add(new Text('Trade Balance : ${_data['Trade Balance']}'));
       contains.add(new Text('GDP : ${_data['GDP']}'));
     }
@@ -154,6 +155,12 @@ class _TradeCardState extends State<TradeCard> {
     };
   }
 
+  bool valid(){
+    if(widget.nation.historyData.GDP.length == 0)
+      return false;
+    return !(widget.nation.historyData.GDP[widget.nation.historyData.GDP.length - 1]['export'] == 0 && widget.nation.historyData.GDP[widget.nation.historyData.GDP.length - 1]['import'] == 0);
+  }
+
   void getSeriesList(){
     List<dynamic> data = new List<dynamic>();
     if(widget.nation.historyData.GDP.length > 0) {
@@ -186,11 +193,13 @@ class _TradeCardState extends State<TradeCard> {
     contains.add(new Text('TRADE'));
     contains.add(new SizedBox(
       height: MediaQuery.of(context).size.height * 0.3,
-      child: new charts.PieChart(
+      child: valid()? new charts.PieChart(
         SeriesList,
-          defaultRenderer: new charts.ArcRendererConfig(
-              arcWidth: 60,
-              arcRendererDecorators: [new charts.ArcLabelDecorator()]),
+        defaultRenderer: new charts.ArcRendererConfig(
+            arcWidth: 60,
+            arcRendererDecorators: [new charts.ArcLabelDecorator()]),
+      ) : new Center(
+        child: Text('No Import && Export for last session'),
       ),
     ));
 
@@ -294,8 +303,8 @@ class _GrowthCardState extends State<GrowthCard> {
       grow.add({
         'session': i,
         'Comsumption': (widget.nation.historyData.GDP[i]['comsumption'] - widget.nation.historyData.GDP[i-1]['comsumption']).toDouble() / widget.nation.historyData.GDP[i-1]['comsumption'] * 100.00,
-        'Export': (widget.nation.historyData.GDP[i]['export'] - widget.nation.historyData.GDP[i-1]['export']).toDouble() / widget.nation.historyData.GDP[i-1]['export'] * 100.00,
-        'Import': (widget.nation.historyData.GDP[i]['import'] - widget.nation.historyData.GDP[i-1]['import']).toDouble() / widget.nation.historyData.GDP[i-1]['import'] * 100.00,
+        //'Export': (widget.nation.historyData.GDP[i]['export'] - widget.nation.historyData.GDP[i-1]['export']).toDouble() / widget.nation.historyData.GDP[i-1]['export'] * 100.00,
+        //'Import': (widget.nation.historyData.GDP[i]['import'] - widget.nation.historyData.GDP[i-1]['import']).toDouble() / widget.nation.historyData.GDP[i-1]['import'] * 100.00,
         'GDP': GDPdiff / oldGDP * 100.00,
         'Population': (widget.nation.historyData.GDP[i]['human'] - widget.nation.historyData.GDP[i-1]['human']).toDouble() / widget.nation.historyData.GDP[i-1]['human'] * 100.00
       });
@@ -312,18 +321,18 @@ class _GrowthCardState extends State<GrowthCard> {
       domainFn: (dynamic data, _) => data['session'],
       measureFn: (dynamic data, _) => data['GDP'],
     ));
-    GDPSeriesList.add(new charts.Series(
-      id: 'Export',
-      data: grow,
-      domainFn: (dynamic data, _) => data['session'],
-      measureFn: (dynamic data, _) => data['Export'],
-    ));
-    GDPSeriesList.add(new charts.Series(
-      id: 'Import',
-      data: grow,
-      domainFn: (dynamic data, _) => data['session'],
-      measureFn: (dynamic data, _) => data['Import'],
-    ));
+//    GDPSeriesList.add(new charts.Series(
+//      id: 'Export',
+//      data: grow,
+//      domainFn: (dynamic data, _) => data['session'],
+//      measureFn: (dynamic data, _) => data['Export'],
+//    ));
+//    GDPSeriesList.add(new charts.Series(
+//      id: 'Import',
+//      data: grow,
+//      domainFn: (dynamic data, _) => data['session'],
+//      measureFn: (dynamic data, _) => data['Import'],
+//    ));
     GDPSeriesList.add(new charts.Series(
       id: 'Population',
       data: grow,
@@ -418,7 +427,7 @@ class StatPage extends StatefulWidget {
   _StatPageState createState() => new _StatPageState(auth: auth);
 }
 
-class _StatPageState extends State<StatPage> {
+class _StatPageState extends State<StatPage> with AutomaticKeepAliveClientMixin<StatPage>{
   final GlobalKey<ScaffoldState> _scaffoldKey = new GlobalKey<ScaffoldState>();
   _StatPageState({Key key, this.auth,});
   FirebaseUser currentUser;//User Holder
@@ -435,11 +444,7 @@ class _StatPageState extends State<StatPage> {
     super.initState();
     //load user doc
     //loadUserDoc();
-    loading = true;
-    _cardList.add(new GDPCard(nation: widget.nation,));
-    _cardList.add(new TradeCard(nation: widget.nation,));
-    _cardList.add(new PopulationCard(nation: widget.nation,));
-    _cardList.add(new GrowthCard(nation: widget.nation,));
+    print('init stat');
     if(widget.change == null){
       widget.change = widget.nation.statRefresh.listen((data){
         _cardList.forEach((CardChart card){
@@ -449,12 +454,26 @@ class _StatPageState extends State<StatPage> {
     }else{
       widget.change.resume();
     }
+    loading = true;
+    _cardList.add(new GDPCard(nation: widget.nation,));
+    _cardList.add(new TradeCard(nation: widget.nation,));
+    _cardList.add(new PopulationCard(nation: widget.nation,));
+    _cardList.add(new GrowthCard(nation: widget.nation,));
+  }
+
+  @override
+  void deactivate() {
+    // TODO: implement deactivate
+    super.deactivate();
+    print('deactivate stat');
   }
 
   @override
   void dispose(){
+    //widget.change.pause();
+    print('dispose stat but keep alive = '+wantKeepAlive.toString());
+    widget.change.cancel();
     super.dispose();
-    widget.change.pause();
   }
 
   @override
@@ -469,4 +488,8 @@ class _StatPageState extends State<StatPage> {
       },
     );
   }
+
+  @override
+  // TODO: implement wantKeepAlive
+  bool get wantKeepAlive => true;
 }
