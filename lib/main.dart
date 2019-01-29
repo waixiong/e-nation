@@ -14,14 +14,13 @@ void main() async {
 
   final FirebaseApp app = await FirebaseApp.configure(
     name: 'db',
-    options: Platform.isAndroid
-        ? const FirebaseOptions(
-      googleAppID: '1:681496751980:android:fa4feb47237491cd',
+    options: FirebaseOptions(
+      googleAppID: (Platform.isAndroid? '1:681496751980:android:fa4feb47237491cd':'1:681496751980:ios:fa4feb47237491cd'),
       gcmSenderID: '681496751980',
       apiKey: "AIzaSyBdM2lTiOPdoWxpTcQgxNIecNpPZqg-8Vk",
       databaseURL: "https://nyes-debuy.firebaseio.com",
       storageBucket: "nyes-debuy.appspot.com",
-    ) : null,
+    ),
   );
   //debugDefaultTargetPlatformOverride = TargetPlatform.fuchsia; // for desktop embedder
   runApp(new MyApp());
@@ -53,8 +52,6 @@ class MyApp extends StatelessWidget {
     print('user is ' + currentUser.uid);
     return 'signInWithGoogle succeeded: $user';
   }
-
-
 
   @override
   Widget build(BuildContext context) {
