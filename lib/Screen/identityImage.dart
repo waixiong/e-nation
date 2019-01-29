@@ -22,17 +22,17 @@ String identityGenerate(){
 }
 
 Future<void> fromCachetoDir(String imageUrl, File imgFile) async {
-  print('IDENTITY : find cache');
+  //print('IDENTITY : find cache');
   final file = await IdentityPhoto.cache.getFile(imageUrl);
-  print('IDENTITY : cache path -- '+file.path);
-  print('IDENTITY : direc path -- '+imgFile.path);
+  //print('IDENTITY : cache path -- '+file.path);
+  //print('IDENTITY : direc path -- '+imgFile.path);
   bool inCache = await file.exists();
-  print('IDENTITY : cache ${inCache?'':'not'} found');
+  //print('IDENTITY : cache ${inCache?'':'not'} found');
   if(inCache){
     List<int> bytes = await file.readAsBytes();
     imgFile = await imgFile.create(recursive: true);
     imgFile.writeAsBytesSync(bytes);
-    print('IDENTITY : write completed');
+    //print('IDENTITY : write completed');
   }
 }
 
@@ -89,7 +89,7 @@ class IdentityPhoto extends StatelessWidget{
                     errorWidget: new IdentityImage(size: size, hash: tradeManager.nationList[uid]['hash']),
                   );
                 }else {
-                  print('IDENTITY : found directory');
+                  //print('IDENTITY : found directory');
                   return Image.file(imgFile);
                 }
             }

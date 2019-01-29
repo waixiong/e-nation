@@ -71,7 +71,7 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin<
 //        print('Unmounted, cant update HomePage');
     };
     if(widget.change == null) {
-      widget.change = widget.nation.homeRefresh.listen((data) {
+      widget.change = widget.nation.nationStream.listen((data) {
         if(this.mounted) {
           setState(() {});
         }

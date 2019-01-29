@@ -42,7 +42,7 @@ class _GovernPageState extends State<GovernPage> with AutomaticKeepAliveClientMi
     super.initState();
     print('init govern');
     if(widget.change == null){
-      widget.change = widget.nation.governRefresh.listen((data){
+      widget.change = widget.nation.nationStream.listen((data){
         setState(() {});
       });
     }else{
@@ -162,54 +162,54 @@ class _GovernPageState extends State<GovernPage> with AutomaticKeepAliveClientMi
   Widget build(BuildContext context) {
     return new Column(
       children: <Widget>[
-        new Container(
-          height : 150,
-          child: new Stack(
-            fit: StackFit.expand,
-            children: <Widget>[
-              Positioned.fill(
-                child: Image.asset('packages/e_nation/Assets/land.jpg', fit: BoxFit.cover),
-              ),
-              new Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment(0.0, -0.2),
-                    end: Alignment.bottomCenter, // 10% of the width, so there are ten blinds.
-                    colors: [const Color(0x00FFFFFF), const Color(0xEE000000)], // whitish to gray
-                    tileMode: TileMode.clamp, // repeats the gradient over the canvas
-                  ),
-                ),
-              ),
-              new Positioned(
-                bottom: 5,
-                left: 5,
-                right: 5,
-                child: new Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: <Widget>[
-                    new FlatButton(
-                      onPressed: (){
-                        print('LAND ADDED');//widget.nation.developLand().then((String react){})
-                      },
-                      child: new Text('DELEVOP NEW LAND', style: TextStyle(fontSize: 18, color: Colors.grey),),
-                    ),
-                    new Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: <Widget>[
-                        new SizedBox(
-                          height: 40, width: 40,
-                          child: Image.asset('packages/e_nation/Assets/landIcon.png', fit: BoxFit.cover),
-                        ),
-                        new Text('${widget.nation.landAvailable}/${widget.nation.land}', style: TextStyle(color: Colors.white, fontSize: 30),)
-                      ],
-                    )
-                  ],
-                ),
-              )
-            ],
-          )
-        ),
+//        new Container(
+//          height : 150,
+//          child: new Stack(
+//            fit: StackFit.expand,
+//            children: <Widget>[
+//              Positioned.fill(
+//                child: Image.asset('packages/e_nation/Assets/land.jpg', fit: BoxFit.cover),
+//              ),
+//              new Container(
+//                decoration: BoxDecoration(
+//                  gradient: LinearGradient(
+//                    begin: Alignment(0.0, -0.2),
+//                    end: Alignment.bottomCenter, // 10% of the width, so there are ten blinds.
+//                    colors: [const Color(0x00FFFFFF), const Color(0xEE000000)], // whitish to gray
+//                    tileMode: TileMode.clamp, // repeats the gradient over the canvas
+//                  ),
+//                ),
+//              ),
+//              new Positioned(
+//                bottom: 5,
+//                left: 5,
+//                right: 5,
+//                child: new Row(
+//                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+//                  children: <Widget>[
+//                    new FlatButton(
+//                      onPressed: (){
+//                        print('LAND ADDED');//widget.nation.developLand().then((String react){})
+//                      },
+//                      child: new Text('DELEVOP NEW LAND', style: TextStyle(fontSize: 18, color: Colors.grey),),
+//                    ),
+//                    new Row(
+//                      mainAxisAlignment: MainAxisAlignment.end,
+//                      crossAxisAlignment: CrossAxisAlignment.center,
+//                      children: <Widget>[
+//                        new SizedBox(
+//                          height: 40, width: 40,
+//                          child: Image.asset('packages/e_nation/Assets/landIcon.png', fit: BoxFit.cover),
+//                        ),
+//                        new Text('${widget.nation.landAvailable}/${widget.nation.land}', style: TextStyle(color: Colors.white, fontSize: 30),)
+//                      ],
+//                    )
+//                  ],
+//                ),
+//              )
+//            ],
+//          )
+//        ),
         new Expanded(
           //height: MediaQuery.of(context).size.height - 85 - 150,
           child: new ListView.builder(

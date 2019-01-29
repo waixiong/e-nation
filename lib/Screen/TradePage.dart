@@ -125,7 +125,7 @@ class _PrivateTradeState extends State<PrivateTrade> with AutomaticKeepAliveClie
       widget.change.resume();
     }
     if(widget.tele == null){
-      widget.tele = widget.nation.telecom.listen((t){
+      widget.tele = widget.nation.nationStream.listen((t){
         setState(() {});
       });
     }else{

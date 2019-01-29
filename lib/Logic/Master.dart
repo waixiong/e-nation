@@ -1,3 +1,6 @@
+import 'package:firebase_database/firebase_database.dart';
+import 'dart:async';
+
 class Master{
 
   List<String> foodList = <String>['Vegetable', 'Meat', 'Processed Vegetable', 'Processed Meat'];
@@ -595,4 +598,57 @@ class Master{
     }
   };
 
+  final StreamController<String> _masterNation = StreamController<String>();
+  Stream<String> get masterNation => _masterNation.stream;
+
+  List<StreamSubscription<Event>> fireListeners;
+
+  void addFirebaseListener(){
+    DatabaseReference data = FirebaseDatabase.instance.reference().child('MASTER');
+    //resources
+    fireListeners.add(data.child('resources').onChildAdded.listen((Event event){
+      building[event.snapshot.key] = event.snapshot.value;
+      _masterNation.add('resources');
+    }));
+    fireListeners.add(data.child('resources').onChildChanged.listen((Event event){
+      building[event.snapshot.key] = event.snapshot.value;
+      _masterNation.add('resources');
+    }));
+    //building
+    fireListeners.add(data.child('building').onChildAdded.listen((Event event){
+      building[event.snapshot.key] = event.snapshot.value;
+      _masterNation.add('building');
+    }));
+    fireListeners.add(data.child('building').onChildChanged.listen((Event event){
+      building[event.snapshot.key] = event.snapshot.value;
+      _masterNation.add('building');
+    }));
+    //specialBuilding
+    fireListeners.add(data.child('specialBuilding').onChildAdded.listen((Event event){
+      building[event.snapshot.key] = event.snapshot.value;
+      _masterNation.add('specialBuilding');
+    }));
+    fireListeners.add(data.child('specialBuilding').onChildChanged.listen((Event event){
+      building[event.snapshot.key] = event.snapshot.value;
+      _masterNation.add('specialBuilding');
+    }));
+  }
+
+  void pauseFire(){
+    fireListeners.forEach((listener){
+      listener.pause();
+    });
+  }
+
+  void resumeFire(){
+    fireListeners.forEach((listener){
+      listener.resume();
+    });
+  }
+
+  void cancelFire(){
+    fireListeners.forEach((listener){
+      listener.cancel();
+    });
+  }
 }

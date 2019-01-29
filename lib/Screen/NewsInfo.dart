@@ -22,18 +22,20 @@ class _NewsInfoState extends State<NewsInfo>{
 
   List<DataSnapshot> news = new List<DataSnapshot>();
   Map<String, bool> exist = {};
+  bool back;
 
   @override
   void initState(){
     super.initState();
     if(widget.change == null){
-      widget.change = widget.nation.newsRefresh.listen((data){
+      widget.change = widget.nation.nationStream.listen((data){
         getNews();
       });
     }else{
       widget.change.resume();
     }
     getNews();
+    back = Random.secure().nextBool();//background pic
   }
 
   void getNews() async {
@@ -62,7 +64,7 @@ class _NewsInfoState extends State<NewsInfo>{
 
   @override
   void dispose(){
-    widget.change.pause();
+    widget.change.cancel();
     super.dispose();
   }
 
@@ -76,7 +78,7 @@ class _NewsInfoState extends State<NewsInfo>{
             expandedHeight: 160.0,
             flexibleSpace: FlexibleSpaceBar(
               title: Text('NEWS AND INFO'),
-              background: Random.secure().nextBool()? Image.asset('packages/e_nation/Assets/news1.jpg', fit: BoxFit.fitWidth,) : Image.asset('packages/e_nation/Assets/news2.jpg', fit: BoxFit.fitHeight,),
+              background: back? Image.asset('packages/e_nation/Assets/news1.jpg', fit: BoxFit.fitWidth,) : Image.asset('packages/e_nation/Assets/news2.jpg', fit: BoxFit.fitHeight,),
             ),
           ),
           SliverSafeArea(
@@ -121,7 +123,7 @@ class _NewsInfoState extends State<NewsInfo>{
                       Container(
                         margin: EdgeInsets.symmetric(vertical: 22),
                         alignment: FractionalOffset.centerLeft,
-                        child: Image.asset('packages/e_nation/Assets/news/redCircle.png', width: 80, height: 80,),
+                        child: Image.asset(news[index].value['title'][0] == 'C'? 'packages/e_nation/Assets/news/contract.png':'packages/e_nation/Assets/news/redCircle.png', width: 80, height: 80,),
                       )
                     ],
                   ),

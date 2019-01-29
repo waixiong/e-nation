@@ -28,7 +28,7 @@ class _TradeHistoryState extends State<TradeHistory>{
   void initState(){
     super.initState();
     if(widget.change == null){
-      widget.change = widget.nation.tradeHistoryRefresh.listen((data){
+      widget.change = widget.nation.nationStream.listen((data){
         getTradeHistory();
       });
     }else{
@@ -38,12 +38,12 @@ class _TradeHistoryState extends State<TradeHistory>{
   }
 
   void getTradeHistory() async {
-    print('is ' + widget.nation.historyData.trade.toString());
+    //print('is ' + widget.nation.historyData.trade.toString());
     DatabaseReference tradeHistory = FirebaseDatabase.instance.reference().child('tradeHistory');
     widget.nation.historyData.trade.forEach((k, v){
       if(!exist.containsKey(k)){
         exist[k] = true;
-        print('start ' + k);
+        //print('start ' + k);
         tradeHistory.child(k).once().then((snap){
           bool insert = false;
           for(int i = 0; i < data.length; i++){
@@ -55,20 +55,21 @@ class _TradeHistoryState extends State<TradeHistory>{
           }
           print(insert);
           if(!insert){
-            print('run');
+            //print('run');
             data.add(snap);
           }
           setState(() {});
         });
       }
     });
-    print(exist);
-    print(data);
+    //print(exist);
+    //print(data);
   }
 
   @override
   void dispose(){
-    widget.change.pause();
+    widget.change.cancel();
+    print('History dispose');
     super.dispose();
   }
 
@@ -88,7 +89,7 @@ class _TradeHistoryState extends State<TradeHistory>{
           SliverSafeArea(
             sliver: data.length > 0? SliverList(
               delegate: SliverChildBuilderDelegate((BuildContext context, int index){
-                print(data[index~/2].key);
+                //print(data[index~/2].key);
                 if(index%2 == 1){
                   return Divider();
                 }else{
@@ -104,7 +105,7 @@ class _TradeHistoryState extends State<TradeHistory>{
                           children: <Widget>[
                             Text('ID: ${data[index~/2].key}', style: TextStyle(fontSize: 10, color: Colors.grey), textAlign: TextAlign.left,),
                             Text(
-                              '${data[index~/2].value['exe']=='S'? 'SUCCESS':(data[index~/2].value['exe']=='P'? 'PARTIAL':(data[index~/2].value['exe']=='V'?'VIOLATE AGREEMENT':'FAIL'))}',
+                              '${data[index~/2].value['exe']=='S'? 'SUCCESS':(data[index~/2].value['exe']=='P'? 'PARTIAL':(data[index~/2].value['exe']=='V'?'VOID':'FAIL'))}',
                               style: TextStyle(
                                 fontSize: 10,
                                 color: data[index~/2].value['exe']=='S'? Colors.green:(data[index~/2].value['exe']=='S'? Colors.orange:Colors.red)
@@ -129,10 +130,10 @@ class _TradeHistoryState extends State<TradeHistory>{
                     ],
                   );
                   if(data[index~/2].value['buyer'] == widget.nation.currentUser.uid){
-                    _leading = IdentityPhoto.fromUID(size: 44, uid: data[index~/2].value['seller'], tradeManager: widget.tradeManager);
+                    _leading = IdentityPhoto.fromUID(size: 50, uid: data[index~/2].value['seller'], tradeManager: widget.tradeManager);
                     _title = Text('Import from ${widget.tradeManager.nationList[data[index~/2].value['seller']]['name']}');
                   }else{
-                    _leading = IdentityPhoto.fromUID(size: 44, uid: data[index~/2].value['buyer'], tradeManager: widget.tradeManager);
+                    _leading = IdentityPhoto.fromUID(size: 50, uid: data[index~/2].value['buyer'], tradeManager: widget.tradeManager);
                     _title = Text('Export to ${widget.tradeManager.nationList[data[index~/2].value['buyer']]['name']}');
                   }
                   return ListTile(

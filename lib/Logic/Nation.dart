@@ -51,10 +51,10 @@ class Nation{
   Stream<bool> get homeRefresh => _homeRefresh.stream;
 
   final StreamController<bool> _statRefresh = StreamController<bool>();
-  Stream<bool> get statRefresh => _statRefresh.stream;
+  Stream<bool> get statRefresh => _statRefresh.stream;//**
 
   final StreamController<bool> _governRefresh = StreamController<bool>();
-  Stream<bool> get governRefresh => _governRefresh.stream;
+  Stream<bool> get governRefresh => _governRefresh.stream;//**
 
   final StreamController<bool> _tradeHistoryRefresh = StreamController<bool>();
   Stream<bool> get tradeHistoryRefresh => _tradeHistoryRefresh.stream;
@@ -72,7 +72,36 @@ class Nation{
   Stream<Notify> get FABNotification => _FABNotification.stream;
 
   final StreamController<bool> _telecom = StreamController<bool>();
-  Stream<bool> get telecom => _telecom.stream;
+  Stream<bool> get telecom => _telecom.stream;//**
+
+  final StreamController<bool> _nationStream = StreamController<bool>.broadcast();
+  Stream<bool> get nationStream => _nationStream.stream;
+
+  Map<dynamic, dynamic> resourcesMatrix = {
+    'Wood': false,
+    'Sand': false,
+    'Steel': false,
+    'Rubber': false,
+    'Cotton': false,
+    'Oil': false,
+    'Leather': false,
+    'Copper': false,
+    'Silver': false,
+    'Vegetable': false,
+    'Meat': false,
+    //'rawFood': 0,
+    'Car': false,
+    'Shirt': false,
+    'Processed Vegetable': false,
+    'Processed Meat': false,
+    'Solar Panel': false,
+    'Furniture': false,
+    'Jewellery': false,
+    'Gloves': false,
+    'Bag': false,
+    'Gadget': false,
+    'Book': false
+  };
 
   Map<dynamic, dynamic> resources = {
     'Money': 0,
@@ -101,17 +130,17 @@ class Nation{
     'Book': 0
   };
   Map<dynamic, dynamic> building = {
-    'Wood': [{'level': 0, 'input': {'human': 0, 'Money': 0}, 'upgrade': false}],
-    'Sand': [{'level': 0, 'input': {'human': 0, 'Money': 0}, 'upgrade': false}],
-    'Steel': [{'level': 0, 'input': {'human': 0, 'Money': 0}, 'upgrade': false}],
-    'Rubber': [{'level': 0, 'input': {'human': 0, 'Money': 0}, 'upgrade': false}],
-    'Cotton': [{'level': 0, 'input': {'human': 0, 'Money': 0}, 'upgrade': false}],
-    'Oil': [{'level': 0, 'input': {'human': 0, 'Money': 0}, 'upgrade': false}],
-    'Leather': [{'level': 0, 'input': {'human': 0, 'Money': 0}, 'upgrade': false}],
-    'Copper': [{'level': 0, 'input': {'human': 0, 'Money': 0}, 'upgrade': false}],
-    'Silver': [{'level': 0, 'input': {'human': 0, 'Money': 0}, 'upgrade': false}],
-    'Vegetable': [{'level': 0, 'input': {'human': 0, 'Money': 0}, 'upgrade': false}],
-    'Meat': [{'level': 0, 'input': {'human': 0, 'Money': 0}, 'upgrade': false}],
+    'Wood': [],
+    'Sand': [],
+    'Steel': [],
+    'Rubber': [],
+    'Cotton': [],
+    'Oil': [],
+    'Leather': [],
+    'Copper': [],
+    'Silver': [],
+    'Vegetable': [],
+    'Meat': [],
     'Car': [],
     'Shirt': [],
     'Processed Vegetable': [],
@@ -154,6 +183,18 @@ class Nation{
     bool created = true;
     fireListeners = new List<StreamSubscription<Event>>();
     this.currentUser = currentUser;
+    master.masterNation.listen((change){
+      if(change == 'resources'){
+        _homeRefresh.add(true);
+        _nationStream.add(true);
+      }else if(change == 'building'){
+        _homeRefresh.add(true);
+        _nationStream.add(true);
+      }else if(change == 'specialBuilding'){
+        _governRefresh.add(true);
+        _nationStream.add(true);
+      }
+    });
     addFirebaseListener();
   }
 
@@ -168,107 +209,140 @@ class Nation{
         _FABRefresh.add(true);
       }
     });
+    FirebaseDatabase.instance.reference().child('resourcesMatrix/${currentUser.uid}').onValue.listen((Event event){
+      resourcesMatrix = event.snapshot.value;
+      print('updated matrix');
+    });
     FirebaseDatabase.instance.reference().child('session').onValue.listen((Event event){
       session = event.snapshot.value;
       _homeRefresh.add(true);
+      _nationStream.add(true);
     });
     FirebaseDatabase.instance.reference().child('sessionPart').onValue.listen((Event event){
       sessionPart = event.snapshot.value;
       _homeRefresh.add(true);
+      _nationStream.add(true);
     });
     DatabaseReference data = FirebaseDatabase.instance.reference().child('users/${currentUser.uid}');
     //resources
     fireListeners.add(data.child('resources').onChildAdded.listen((Event event){
       resources[event.snapshot.key] = event.snapshot.value;
       _homeRefresh.add(true);
+      _nationStream.add(true);
     }));
     fireListeners.add(data.child('resources').onChildChanged.listen((Event event){
       resources[event.snapshot.key] = event.snapshot.value;
       _homeRefresh.add(true);
+      _nationStream.add(true);
     }));
     //building
     fireListeners.add(data.child('building').onChildAdded.listen((Event event){
       building[event.snapshot.key] = event.snapshot.value;
       _homeRefresh.add(true);
+      _nationStream.add(true);
     }));
     fireListeners.add(data.child('building').onChildChanged.listen((Event event){
       building[event.snapshot.key] = event.snapshot.value;
       _homeRefresh.add(true);
+      _nationStream.add(true);
+    }));
+    fireListeners.add(data.child('building').onChildRemoved.listen((Event event){
+      building[event.snapshot.key] = [];
+      _homeRefresh.add(true);
+      _nationStream.add(true);
     }));
     fireListeners.add(data.child('humanAvailable').onValue.listen((Event event){
       humanAvailable = event.snapshot.value;
       _homeRefresh.add(true);
+      _nationStream.add(true);
     }));
     fireListeners.add(data.child('human').onValue.listen((Event event){
       human = event.snapshot.value;
       _homeRefresh.add(true);
       _FABRefresh.add(true);
+      _nationStream.add(true);
     }));
     fireListeners.add(data.child('landAvailable').onValue.listen((Event event){
       landAvailable = event.snapshot.value;
       _homeRefresh.add(true);
       _governRefresh.add(true);
+      _nationStream.add(true);
     }));
     fireListeners.add(data.child('land').onValue.listen((Event event){
       land = event.snapshot.value;
       _homeRefresh.add(true);
       _governRefresh.add(true);
+      _nationStream.add(true);
     }));
     fireListeners.add(data.child('buildList').onChildAdded.listen((Event event){
       buildList[event.snapshot.key] = event.snapshot.value;
       _homeRefresh.add(true);
+      _nationStream.add(true);
     }));
     fireListeners.add(data.child('buildList').onChildChanged.listen((Event event){
       buildList[event.snapshot.key] = event.snapshot.value;
       _homeRefresh.add(true);
+      _nationStream.add(true);
     }));
     fireListeners.add(data.child('buildList').onChildRemoved.listen((Event event){
       buildList.remove(event.snapshot.key);
       _homeRefresh.add(true);
+      _nationStream.add(true);
     }));
     fireListeners.add(data.child('comsumption/supply').onChildAdded.listen((Event event){
       comsumptionSupply[event.snapshot.key] = event.snapshot.value;
       _homeRefresh.add(true);
+      _nationStream.add(true);
     }));
     fireListeners.add(data.child('comsumption/supply').onChildChanged.listen((Event event){
       comsumptionSupply[event.snapshot.key] = event.snapshot.value;
       _homeRefresh.add(true);
+      _nationStream.add(true);
     }));
     fireListeners.add(data.child('comsumption/supply').onChildRemoved.listen((Event event){
       comsumptionSupply.remove(event.snapshot.key);
       _homeRefresh.add(true);
+      _nationStream.add(true);
     }));
     fireListeners.add(data.child('comsumption/demand').onChildAdded.listen((Event event){
       comsumptionDemand[event.snapshot.key] = event.snapshot.value;
       _homeRefresh.add(true);
+      _nationStream.add(true);
     }));
     fireListeners.add(data.child('comsumption/demand').onChildChanged.listen((Event event){
       comsumptionDemand[event.snapshot.key] = event.snapshot.value;
       _homeRefresh.add(true);
+      _nationStream.add(true);
     }));
     fireListeners.add(data.child('comsumption/demand').onChildRemoved.listen((Event event){
       comsumptionDemand.remove(event.snapshot.key);
       _homeRefresh.add(true);
+      _nationStream.add(true);
     }));
     fireListeners.add(data.child('historyData/GDP').onValue.listen((Event event){
       historyData.GDP = event.snapshot.value?? historyData.GDP;
       _statRefresh.add(true);
+      _nationStream.add(true);
     }));
     fireListeners.add(data.child('comsumption/minD').onChildAdded.listen((Event event){
       minD[event.snapshot.key] = event.snapshot.value;
       _homeRefresh.add(true);
+      _nationStream.add(true);
     }));
     fireListeners.add(data.child('comsumption/minD').onChildChanged.listen((Event event){
       minD[event.snapshot.key] = event.snapshot.value;
       _homeRefresh.add(true);
+      _nationStream.add(true);
     }));
     fireListeners.add(data.child('comsumption/minD').onChildRemoved.listen((Event event){
       minD.remove(event.snapshot.key);
       _homeRefresh.add(true);
+      _nationStream.add(true);
     }));
     fireListeners.add(data.child('historyData/trade').onChildAdded.listen((Event event){
       historyData.trade[event.snapshot.key] = event.snapshot.value;
       _tradeHistoryRefresh.add(true);
+      _nationStream.add(true);
       //print('get trade ${event.snapshot.value? 'read':'not read'}');
       if(!event.snapshot.value){
         FirebaseDatabase.instance.reference().child('tradeHistory/${event.snapshot.key}').once().then((DataSnapshot snapshot){
@@ -277,10 +351,17 @@ class Nation{
         });
       }
     }));
-    fireListeners.add(data.child('historyData/news').onValue.listen((Event event){
-      historyData.news = event.snapshot.value?? historyData.trade;
+    fireListeners.add(data.child('historyData/news').onChildAdded.listen((Event event){
+      historyData.news[event.snapshot.key] = event.snapshot.value;
       //print('trade added ' + event.snapshot.value.toString());
       _newsRefresh.add(true);
+      _nationStream.add(true);
+      if(!event.snapshot.value){
+        FirebaseDatabase.instance.reference().child('news/${event.snapshot.key}').once().then((DataSnapshot snapshot){
+          //print('send trade ${snapshot.key}');
+          _FABNotification.add(new Notify(dataSnapshot: snapshot, type: NotifyType.info));
+        });
+      }
     }));
     fireListeners.add(data.child('historyData/loan').onChildAdded.listen((Event event){
       historyData.loan[event.snapshot.key] = event.snapshot.value;
@@ -294,6 +375,7 @@ class Nation{
       specialBuilding = event.snapshot.value?? specialBuilding;
       _governRefresh.add(true);
       _telecom.add(true);
+      _nationStream.add(true);
     }));
 //    DatabaseReference history = FirebaseDatabase.instance.reference().child('historyData/${currentUser.uid}');
 //    fireListeners.add(history.child('GDP').onValue.listen((Event event){
@@ -311,6 +393,26 @@ class Nation{
     fireListeners.forEach((listener){
       listener.resume();
     });
+  }
+
+  void cancelFire(){
+    fireListeners.forEach((listener){
+      listener.cancel();
+    });
+  }
+
+  void end(){
+    cancelFire();
+    _nationStream.close();
+    _homeRefresh.close();
+    _governRefresh.close();
+    _statRefresh.close();
+    _telecom.close();
+    _tradeHistoryRefresh.close();
+    _FABNotification.close();
+    _FABRefresh.close();
+    _loanDataRefresh.close();
+    _newsRefresh.close();
   }
 
 //  void endSession(){
@@ -367,6 +469,11 @@ class Nation{
     }
     String r = '';
     factoryInput.forEach((key, value){
+      //Solar Panel cost -10%
+      if(resourcesMatrix['Solar Panel']){
+        print('solar panel found');
+        value = value * 0.9;
+      }
       if(input.containsKey(key)) {
         //assert(this.resources[key] + input[key] >= value * human, '$key not enough');
         if(!(this.resources[key] + input[key] >= value * human)){
@@ -389,6 +496,9 @@ class Nation{
     _resourcesWrite('humanAvailable', (input['human'] - human));
     input['human'] = human;
     factoryInput.forEach((key, value){
+      if(resourcesMatrix['Solar Panel']){
+        value = value * 0.9;
+      }
       if(input.containsKey(key))
         //this.resources[key] += input[key] - (value * human).toInt();
         _resourcesWrite('resources/${key}', (input[key] - (value * human).toInt()));
@@ -411,21 +521,29 @@ class Nation{
     if(!(this.resources['Money'] >= upgrade['Money'])){
       return 'No enough money';
     }
-    bool r = true;
+    List<String> r = [];
     master.resourcesOrder.forEach((s){
       if(upgrade.containsKey(s))
         if(!(this.resources[s] >= upgrade[s])){
-          r = false;
-        };
+          r.add(s);
+        }
     });
-    if(!r){
-      return 'No enough resources';
+    if(r.length > 0){
+      if(r.length == 1)
+        return 'No enough ${r[0]}';
+      else{
+        String returnString = 'No enough ';
+        for(int i = 0; i < r.length-1; i++){
+          returnString += r[i] + ', ';
+        }
+        returnString = returnString.substring(0, returnString.length-2);
+        returnString += ' and ${r[r.length-1]}';
+      }
     }
-    if(upgrade.containsKey('R&D')){
-      int level = this.specialBuilding['R&D']['level'];
-      if(!(level >= upgrade['R&D'])){
-        return 'R&D no enough to support';
-      };
+    if(upgrade.containsKey('Education')){
+      if(specialBuilding['Education']['level'] < upgrade['Education']){
+        return 'Education level need to be level ${upgrade['Education']} or above';
+      }
     }
     upgrade.forEach((key, value){
       if(key == 'human')
@@ -464,18 +582,24 @@ class Nation{
     if(!(this.resources['Money'] >= upgrade['Money'])){
       return 'No enough money';
     }
-    bool r = true;
+    List<String> r = [];
     master.resourcesOrder.forEach((s){
       if(upgrade.containsKey(s))
         if(!(this.resources[s] >= upgrade[s])){
-          r = false;
+          r.add(s);
         }
     });
-    if(!r){
-      return 'No enough resources';
-    }
-    if(landAvailable >= land){
-      return 'No enough land, you need to develop new land for this construction';
+    if(r.length > 0){
+      if(r.length == 1)
+        return 'No enough ${r[0]}';
+      else{
+        String returnString = 'No enough ';
+        for(int i = 0; i < r.length-1; i++){
+          returnString += r[i] + ', ';
+        }
+        returnString = returnString.substring(0, returnString.length-2);
+        returnString += ' and ${r[r.length-1]}';
+      }
     }
     if(upgrade.containsKey('Education')){
       if(specialBuilding['Education']['level'] < upgrade['Education']){

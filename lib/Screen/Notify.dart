@@ -6,6 +6,7 @@ import 'package:e_nation/Logic/Nation.dart';
 import 'package:e_nation/Logic/TradeManager.dart';
 import 'package:e_nation/Screen/identityImage.dart';
 import 'package:e_nation/Screen/_FactoryCard.dart';
+import 'package:e_nation/Screen/Loading.dart';
 
 class NotifyWidget extends StatefulWidget{
   NotifyWidget({this.nation, this.tradeManager});
@@ -37,28 +38,27 @@ class _NofifyState extends State<NotifyWidget>{
   }
 
   setNotification(Notify notify){
-    if(notify.type == NotifyType.trade){
-      //Key dismissKey = Key(notify.dataSnapshot.key);
-      int indexNow = card.length;
-      Timer timer = new Timer(Duration(seconds: 5), (){ onTimeout(indexNow); });
-      card.add(Dismissible(
-        key: Key(notify.dataSnapshot.key),
-        onDismissed: (direction){
-          print('dismiss');
-          timer.cancel();
-          setState(() {
-            card.removeLast();
-          });
-        },
-        child: new TradeNotifyCard(snapshot: notify.dataSnapshot, nation: widget.nation, tradeManager: widget.tradeManager,),
-      ));
-      setRead(notify.dataSnapshot.key);
-      setState(() {});
-    }
+    //Key dismissKey = Key(notify.dataSnapshot.key);
+    int indexNow = card.length;
+    Timer timer = new Timer(Duration(seconds: 7), (){ onTimeout(indexNow); });
+    card.add(Dismissible(
+      key: Key(notify.dataSnapshot.key),
+      onDismissed: (direction){
+        print('dismiss');
+        timer.cancel();
+        setState(() {
+          card.removeLast();
+        });
+      },
+      child: notify.type == NotifyType.trade? new TradeNotifyCard(snapshot: notify.dataSnapshot, nation: widget.nation, tradeManager: widget.tradeManager,)
+          :new InfoNotifyCard(snapshot: notify.dataSnapshot, nation: widget.nation, tradeManager: widget.tradeManager,),
+    ));
+    setRead(notify.dataSnapshot.key, notify.type);
+    setState(() {});
   }
 
-  setRead(String key) async {
-    TransactionResult transactionResult = await FirebaseDatabase.instance.reference().child('users/${widget.nation.currentUser.uid}/historyData/trade/${key}').runTransaction((MutableData mutableData) async {
+  setRead(String key, NotifyType type) async {
+    TransactionResult transactionResult = await FirebaseDatabase.instance.reference().child('users/${widget.nation.currentUser.uid}/historyData/${type == NotifyType.trade? 'trade':'news'}/${key}').runTransaction((MutableData mutableData) async {
       //if(mutableData.value != null) {
         mutableData.value = true;
       //}
@@ -170,6 +170,96 @@ class TradeNotifyCard extends StatelessWidget{
 
 }
 
+class InfoNotifyCard extends StatelessWidget{
+  InfoNotifyCard({this.snapshot, this.nation, this.tradeManager});
+
+  DataSnapshot snapshot;
+  Nation nation;
+  TradeManager tradeManager;
+
+  @override
+  Widget build(BuildContext context) {
+    // TODO: implement build
+    print('Trade Notify');
+    Widget _leading, _title, _content, _trailing;
+    _leading = Icon(Icons.info_outline, size: 44,);
+    _title = Text(snapshot.value['title'], style: TextStyle(fontWeight: FontWeight.w700),);
+    //_trailing = ResourcePic(resourceImg: nation.master.resources[snapshot.value['resource']]['img'], radius: 14,);
+    _content = Column(
+      children: <Widget>[
+        new Container(
+          alignment: Alignment.centerLeft,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: <Widget>[
+              Text('Contract ID: ${snapshot.value['contract']}', style: TextStyle(fontSize: 10, color: Colors.grey), textAlign: TextAlign.left,),
+            ],
+          ),
+        ),
+        new Container(
+          alignment: Alignment.centerLeft,
+          child: Text(snapshot.value['info'], textAlign: TextAlign.left, style: TextStyle(fontSize: 9),),
+        ),
+
+      ],
+    );
+    return new Card(
+      child: Container(
+        padding: EdgeInsets.all(4.0),
+        height: MediaQuery.of(context).size.width/5,
+        width: MediaQuery.of(context).size.width,
+        child: new Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: <Widget>[
+            Padding(
+              padding: EdgeInsets.only(left: 5.0, right: 8.0),
+              child: _leading,
+            ),
+            new Expanded(
+              child: new Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  _title,
+                  _content
+                ],
+              ),
+            ),
+            Padding(
+              padding: EdgeInsets.only(left: 10.0, right: 10.0),
+              child: new FutureBuilder(
+                future: FirebaseDatabase.instance.reference().child('contract/${snapshot.value['contract']}').once(),
+                builder: (BuildContext context, AsyncSnapshot<DataSnapshot> snapshot) {
+                  switch (snapshot.connectionState) {
+                    case ConnectionState.none:
+                    case ConnectionState.active:
+                    case ConnectionState.waiting:
+                      return new Container(
+                        width: 28,
+                        height: 28,
+                        child: Loading(),
+                      );
+                    case ConnectionState.done:
+                      if (snapshot.hasError)
+                        return CircleAvatar(backgroundColor: Colors.grey, radius: 14,);
+                      String uid;
+                      snapshot.data.value['parties'].forEach((party, v){
+                        if(party != nation.currentUser.uid){
+                          uid = party;
+                        }
+                      });
+                      return IdentityPhoto.fromUID(size: 28, uid: uid, tradeManager: tradeManager);
+                  }
+                }
+              ),
+            )
+          ],
+        ),
+      ),
+    );
+  }
+
+}
 
 //ListTile(
 //isThreeLine: true,

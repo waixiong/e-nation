@@ -188,6 +188,9 @@ class _FactoryInputList extends State<FactoryInputList>{
     String neededList = '';
     Map<String, num> map = widget.nation.master.building[widget.resource]['input'];
     map.forEach((resource, value){
+      if(widget.nation.resourcesMatrix['Solar Panel']){
+        value = value * 0.9;
+      }
       neededList += (value*100).toInt().toString() + ' '+ resource + ', ';
     });
     neededList = neededList.substring(0, neededList.length - 2);
@@ -211,19 +214,19 @@ class _FactoryInputList extends State<FactoryInputList>{
                 String resourcesNeed = '';
                 widget.nation.master.resourcesOrder.forEach((r){
                   if(requirement.containsKey(r)){
-                    resourcesNeed += ', ' + requirement[r].toString() + ' ' + r;
+                    resourcesNeed += requirement[r].toString() + ' ' + r + '\n';
                   }
                 });
-                resourcesNeed += ' need';
-                resourcesNeed = resourcesNeed.substring(2, resourcesNeed.length);
+                //resourcesNeed += ' need';
+                //resourcesNeed = resourcesNeed.substring(2, resourcesNeed.length);
                 //check Govern buidling
                 String gR = '';
                 if(requirement.containsKey('Education')){
-                  gR += '\nEducation level need to be at level ${requirement['Education']} or above.';
+                  gR += '\nEducation level ${requirement['Education']} or above.';
                 }
                 return AlertDialog(
                   title: new Text('Upgrade ${widget.resource} Production to level ${factoryList[i]['level']+2}'),
-                  content: new Text('${requirement['human'].toString()} human need\n${requirement['Money'].toString()} money need\n${resourcesNeed}${gR}'),
+                  content: new Text('${requirement['human'].toString()} labour\n${requirement['Money'].toString()} money\n${resourcesNeed}${gR}'),
                   actions: <Widget>[
                     // usually buttons at the bottom of the dialog
                     new FlatButton(
@@ -302,20 +305,20 @@ class _FactoryInputList extends State<FactoryInputList>{
                 String resourcesNeed = '';
                 widget.nation.master.resourcesOrder.forEach((r){
                   if(requirement.containsKey(r)){
-                    resourcesNeed += ', ' + requirement[r].toString() + ' ' + r;
+                    resourcesNeed += requirement[r].toString() + ' ' + r + '\n';
                   }
                 });
-                resourcesNeed += ' need';
-                resourcesNeed = resourcesNeed.substring(2, resourcesNeed.length);
+                //resourcesNeed += ' need';
+                //resourcesNeed = resourcesNeed.substring(2, resourcesNeed.length);
                 //check Govern buidling
                 String gR = '';
                 if(requirement.containsKey('Education')){
-                  gR += '\nEducation level need to be at level ${requirement['Education']} or above.';
+                  gR += '\nEducation level ${requirement['Education']} or above.';
                 }
                 // return object of type Dialog
                 return AlertDialog(
                   title: new Text('Build ${factoryList.length == 0? 'a':'another'} ${widget.resource} production line?'),
-                  content: new Text('${requirement['human'].toString()} human need\n${requirement['Money'].toString()} money need\n${resourcesNeed}${gR}\nRequire a land to build'),//new Text('${widget.nation.master.building[widget.resource]['upgrade'][0]['human']} human need'),
+                  content: new Text('${requirement['human'].toString()} labour\n${requirement['Money'].toString()} money\n${resourcesNeed}${gR}\n'),//new Text('${widget.nation.master.building[widget.resource]['upgrade'][0]['human']} human need'),
                   actions: <Widget>[
                     // usually buttons at the bottom of the dialog
                     new FlatButton(

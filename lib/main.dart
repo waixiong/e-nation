@@ -6,10 +6,9 @@ import 'package:e_nation/Screen/HomePage.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'dart:io' show Platform;
-import 'dart:async';
 import 'package:flutter/services.dart';
-//import 'package:bleezy/User.dart';
 
+//import 'package:flutter/foundation.dart' show debugDefaultTargetPlatformOverride; // for desktop embedder
 
 void main() async {
 
@@ -24,6 +23,7 @@ void main() async {
       storageBucket: "nyes-debuy.appspot.com",
     ) : null,
   );
+  //debugDefaultTargetPlatformOverride = TargetPlatform.fuchsia; // for desktop embedder
   runApp(new MyApp());
 }
 

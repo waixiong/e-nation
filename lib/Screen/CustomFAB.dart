@@ -86,7 +86,7 @@ class _CustomFABState extends State<CustomFAB>
   bool onLoading = false;
   Widget fabLoading = new Container(
     color: Color.fromARGB(128, 0, 0, 0),
-    child: Loading(),
+    child: NYESLoading(),
   );
   
   StreamSubscription<Notify> notification;
@@ -109,7 +109,7 @@ class _CustomFABState extends State<CustomFAB>
     statPage = new StatPage(currentUser: widget.currentUser, auth: widget.auth, nation: nation,);
 
     tradeHistory = new TradeHistory(nation: nation, tradeManager: tradeManager,);
-    newsInfo = new NewsInfo(nation: nation,);
+    //newsInfo = new NewsInfo(nation: nation,);
     loanPage = new LoanPage(nation: nation, currentUser: widget.currentUser, auth: widget.auth, tradeManager: tradeManager,);
 
     _pageController = PageController(
@@ -546,7 +546,7 @@ class _CustomFABState extends State<CustomFAB>
                 ],
               ),
               onTap: (){
-                Navigator.push(context, new MaterialPageRoute(builder: (BuildContext context) => newsInfo));
+                Navigator.push(context, new MaterialPageRoute(builder: (BuildContext context) => new NewsInfo(nation: nation,)));
               },
             ),
             ListTile(
@@ -563,21 +563,21 @@ class _CustomFABState extends State<CustomFAB>
                 Navigator.push(context, new MaterialPageRoute(builder: (BuildContext context) => loanPage));
               },
             ),
-            ListTile(
-              title: new Row(
-                children: <Widget>[
-                  Container(
-                    width: 40,
-                    child: new Icon(Icons.map, size: 24,),
-                  ),
-                  new Text('Map')
-                ],
-              ),
-              onTap: (){
-                print('Map will be shown');
-                //Navigator.push(context, new MaterialPageRoute(builder: (BuildContext context) => loanPage));
-              },
-            ),
+//            ListTile(
+//              title: new Row(
+//                children: <Widget>[
+//                  Container(
+//                    width: 40,
+//                    child: new Icon(Icons.map, size: 24,),
+//                  ),
+//                  new Text('Map')
+//                ],
+//              ),
+//              onTap: (){
+//                print('Map will be shown');
+//                //Navigator.push(context, new MaterialPageRoute(builder: (BuildContext context) => loanPage));
+//              },
+//            ),
             ListTile(
               title: Text('LOGOUT'),
               onTap: () {

@@ -446,7 +446,7 @@ class _StatPageState extends State<StatPage> with AutomaticKeepAliveClientMixin<
     //loadUserDoc();
     print('init stat');
     if(widget.change == null){
-      widget.change = widget.nation.statRefresh.listen((data){
+      widget.change = widget.nation.nationStream.listen((data){
         _cardList.forEach((CardChart card){
           card.change();
         });

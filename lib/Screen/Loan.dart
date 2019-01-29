@@ -80,7 +80,9 @@ class ListCard extends StatelessWidget{
             new Expanded(
               child: FlatButton(
                 onPressed: data['value']['pay']==0? (){
-                  repayment(true, context);
+                  repayment(false, context).then((react){
+                    if(react) Navigator.pop(context);
+                  });
                 }:null,
                 child: Text('Pay ${(totalAmount).toStringAsFixed(0)}'),
               ),
@@ -95,6 +97,30 @@ class ListCard extends StatelessWidget{
     double totalAmount = data['value']['amount'] * (1 + data['value']['interest']/100);
     List<Widget> contents = [];
     //add payment record && detail here
+    List<dynamic> payments = data['value']['paymentDetail'];
+    payments.forEach((payment){
+      DateTime time = DateTime.fromMillisecondsSinceEpoch(payment['timestamp']);
+      contents.add(new Padding(
+        padding: EdgeInsets.all(5.0),
+        child: new Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: <Widget>[
+            new Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                new Text('${payment['id']}${payment['claim']? ' (CLAIMED)':''}', style: TextStyle(fontSize: 10, color: payment['claim']? Colors.red:Colors.black)),
+                new Text('${time.hour~/10}${time.hour%10}:${time.minute~/10}${time.minute%10}:${time.second~/10}${time.second%10}', style: TextStyle(fontSize: 12, color: Colors.grey))
+              ],
+            ),
+            new Expanded(
+              child: Text('Paid \$${payment['amount']}', textAlign: TextAlign.right,),
+            )
+          ],
+        ),
+      ));
+      contents.add(Divider());
+    });
     if(contents.length == 0){
       contents.add(Center(child: Text('No payment be recorded'),));
     }
@@ -103,19 +129,9 @@ class ListCard extends StatelessWidget{
         new Expanded(
           child: FlatButton(
             onPressed: (){
-              repayment(true, context).then((react){
-                if(react) Navigator.pop(context);
-              });
+              Navigator.pop(context);
             },
-            child: Text('Pay ${(totalAmount * 0.5).toStringAsFixed(0)}'),
-          ),
-        ),
-        new Expanded(
-          child: FlatButton(
-            onPressed: data['value']['pay']==0? (){
-              repayment(true, context);
-            }:null,
-            child: Text('Pay ${(totalAmount).toStringAsFixed(0)}'),
+            child: Text('BACK'),
           ),
         )
       ],
@@ -164,7 +180,7 @@ class ListCard extends StatelessWidget{
             showDialog(
                 context: context,
                 builder: (BuildContext context){
-                  return paymentDialog(context);
+                  return detailDialog(context);
                 }
             );
           },
@@ -330,7 +346,7 @@ class _LoanPageState extends State<LoanPage> with SingleTickerProviderStateMixin
       }else{
         bool insert = false;
         for(int i = 0; i < historyDebt.length; i++){
-          if(historyDebt[i]['value']['fTimestamp'] < v['fTimestamp']){
+          if(historyDebt[i]['value']['ftimestamp'] < v['ftimestamp']){
             historyDebt.insert(i, { 'key': k, 'value': v });
             insert = true;
             break;
