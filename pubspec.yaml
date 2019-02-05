@@ -7,7 +7,7 @@ description: A new Flutter application.
 # Both the version and the builder number may be overridden in flutter
 # build by specifying --build-name and --build-number, respectively.
 # Read more about versioning at semver.org.
-version: 1.0.0+1
+version: 1.0.1+1
 
 environment:
   sdk: ">=2.0.0-dev.68.0 <3.0.0"
@@ -29,6 +29,7 @@ dependencies:
     git: https://github.com/btastic/flutter_native_image.git
   path_provider: '^0.4.0'
   flutter_cache_manager: '^0.2.0+1'
+  package_info: '^0.4.0'
   #uuid: '^1.0.3'
   #cloud_firestore: '^0.8.2+3'
   #barcode_scan: '^0.0.8'
@@ -40,6 +41,12 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  flutter_launcher_icons: '^0.7.0'
+
+flutter_icons:
+  android: true
+  ios: true
+  image_path: "lib/Assets/enationIcon.png"
 
 
 # For information on the generic Dart part of this file, see the
@@ -102,14 +109,15 @@ flutter:
     - packages/e_nation/Assets/specialBuilding/healthcare.jpg
     - packages/e_nation/Assets/specialBuilding/r&d.jpg
     - packages/e_nation/Assets/specialBuilding/telecommunication.jpg
-    - packages/e_nation/Assets/land.jpg
-    - packages/e_nation/Assets/landIcon.png
     - packages/e_nation/Assets/trade.jpg
     - packages/e_nation/Assets/news1.jpg
     - packages/e_nation/Assets/news2.jpg
     - packages/e_nation/Assets/news/redCircle.png
     - packages/e_nation/Assets/news/contract.png
     - packages/e_nation/Assets/food.jpg
+    - packages/e_nation/Assets/FirebaseAuthentication.png
+    - packages/e_nation/Assets/FirebaseRealtimeDatabase.png
+    - packages/e_nation/Assets/BuiltWithFirebase.png
   #  - packages/e_nation/Assets/logging.jpg
   #  - images/a_dot_burr.jpeg
   #  - images/a_dot_ham.jpeg
