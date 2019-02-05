@@ -8,6 +8,7 @@ import io.flutter.plugins.firebase.database.FirebaseDatabasePlugin;
 import io.flutter.plugins.firebase.storage.FirebaseStoragePlugin;
 import com.example.flutternativeimage.FlutterNativeImagePlugin;
 import io.flutter.plugins.imagepicker.ImagePickerPlugin;
+import io.flutter.plugins.packageinfo.PackageInfoPlugin;
 import io.flutter.plugins.pathprovider.PathProviderPlugin;
 import com.matheusvillela.flutter.plugins.qrcodereader.QRCodeReaderPlugin;
 import io.flutter.plugins.sharedpreferences.SharedPreferencesPlugin;
@@ -27,6 +28,7 @@ public final class GeneratedPluginRegistrant {
     FirebaseStoragePlugin.registerWith(registry.registrarFor("io.flutter.plugins.firebase.storage.FirebaseStoragePlugin"));
     FlutterNativeImagePlugin.registerWith(registry.registrarFor("com.example.flutternativeimage.FlutterNativeImagePlugin"));
     ImagePickerPlugin.registerWith(registry.registrarFor("io.flutter.plugins.imagepicker.ImagePickerPlugin"));
+    PackageInfoPlugin.registerWith(registry.registrarFor("io.flutter.plugins.packageinfo.PackageInfoPlugin"));
     PathProviderPlugin.registerWith(registry.registrarFor("io.flutter.plugins.pathprovider.PathProviderPlugin"));
     QRCodeReaderPlugin.registerWith(registry.registrarFor("com.matheusvillela.flutter.plugins.qrcodereader.QRCodeReaderPlugin"));
     SharedPreferencesPlugin.registerWith(registry.registrarFor("io.flutter.plugins.sharedpreferences.SharedPreferencesPlugin"));
