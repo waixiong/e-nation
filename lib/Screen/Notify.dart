@@ -31,28 +31,29 @@ class _NofifyState extends State<NotifyWidget>{
     widget.setNotification = setNotification;
   }
 
-  onTimeout(int index){
+  onTimeout(Widget widget){
     setState(() {
-      card.removeAt(index);
+      card.remove(widget);
     });
   }
 
   setNotification(Notify notify){
     //Key dismissKey = Key(notify.dataSnapshot.key);
     int indexNow = card.length;
-    Timer timer = new Timer(Duration(seconds: 7), (){ onTimeout(indexNow); });
-    card.add(Dismissible(
+    Dismissible notification = Dismissible(
       key: Key(notify.dataSnapshot.key),
       onDismissed: (direction){
         print('dismiss');
-        timer.cancel();
+        //timer.cancel();
         setState(() {
           card.removeLast();
         });
       },
       child: notify.type == NotifyType.trade? new TradeNotifyCard(snapshot: notify.dataSnapshot, nation: widget.nation, tradeManager: widget.tradeManager,)
           :new InfoNotifyCard(snapshot: notify.dataSnapshot, nation: widget.nation, tradeManager: widget.tradeManager,),
-    ));
+    );
+    card.add(notification);
+    Timer timer = new Timer(Duration(seconds: 7), (){ onTimeout(notification); });
     setRead(notify.dataSnapshot.key, notify.type);
     setState(() {});
   }
@@ -119,10 +120,10 @@ class TradeNotifyCard extends StatelessWidget{
             children: <Widget>[
               Text('ID: ${snapshot.key}', style: TextStyle(fontSize: 10, color: Colors.grey), textAlign: TextAlign.left,),
               Text(
-                '${snapshot.value['exe']=='S'? 'SUCCESS':(snapshot.value['exe']=='P'? 'PARTIAL':(snapshot.value['exe']=='V'?'VIOLATE AGREEMENT':'FAIL'))}',
+                '${snapshot.value['exe']=='S'? 'SUCCESS':(snapshot.value['exe']=='P'? 'PARTIAL':(snapshot.value['exe']=='V'?'VOID':'FAIL'))}',
                 style: TextStyle(
                     fontSize: 10,
-                    color: snapshot.value['exe']=='S'? Colors.green:(snapshot.value['exe']=='S'? Colors.orange:Colors.red)
+                    color: snapshot.value['exe']=='S'? Colors.green:(snapshot.value['exe']=='P'? Colors.orange:Colors.red)
                 ),
                 textAlign: TextAlign.right,
               )

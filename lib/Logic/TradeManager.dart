@@ -73,10 +73,18 @@ class TradeManager{
   final StreamController<Map<String, bool>> _publicResult = StreamController<Map<String, bool>>();
   Stream<Map<String, bool>> get publicResult => _publicResult.stream;
 
+  final StreamController<bool> _nationStream = StreamController<bool>.broadcast();
+  Stream<bool> get nationStream => _nationStream.stream;
+
   void initialize(){
     DatabaseReference nations = FirebaseDatabase.instance.reference().child('idToName');
     nations.onChildAdded.listen((event){
       nationList[event.snapshot.key] = event.snapshot.value;
+      _nationStream.add(true);
+    });
+    nations.onChildChanged.listen((event){
+      nationList[event.snapshot.key] = event.snapshot.value;
+      _nationStream.add(true);
     });
     master.resourcesOrder.forEach((resource){
       trade[resource]['LastDone'] = master.resources[resource]['price'];

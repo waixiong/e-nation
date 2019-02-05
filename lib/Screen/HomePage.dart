@@ -129,7 +129,7 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin<
     bar.add(new Expanded(child: new Row(
       children: <Widget>[
         new Icon(Icons.monetization_on),
-        new Text(widget.nation.resources['Money'].toString())
+        new Text(widget.nation.resources['Money'].toStringAsFixed(2))
       ],)));
 
     return new Card(

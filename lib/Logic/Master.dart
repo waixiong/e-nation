@@ -8,7 +8,7 @@ class Master{
   'Oil', 'Leather', 'Copper', 'Silver', 'Vegetable', 'Meat',
   'Car', 'Shirt', 'Processed Vegetable', 'Processed Meat', 'Solar Panel', 'Furniture',
   'Jewellery', 'Gloves', 'Bag', 'Gadget', 'Book'];
-  Map<String, Map<String, dynamic>> resources = {
+  Map resources = {
     'Wood': {
       'price': 5.0,
       'img': 'packages/e_nation/Assets/resources/wood.png',
@@ -129,7 +129,7 @@ class Master{
       'happy': 2
     }
   };
-  dynamic building = {
+  Map building = {
     'Wood': {
       'rate': {
         'base': 3.0,
@@ -561,7 +561,7 @@ class Master{
     'Money': 40000
   };
 
-  dynamic specialBuilding = {
+  Map specialBuilding = {
     'Education': {
       'upgrade' : [
         {'human': 1000, 'Money': 75000, 'Land': 1},
@@ -598,25 +598,28 @@ class Master{
     }
   };
 
-  final StreamController<String> _masterNation = StreamController<String>();
+  final StreamController<String> _masterNation = StreamController<String>.broadcast();
   Stream<String> get masterNation => _masterNation.stream;
 
-  List<StreamSubscription<Event>> fireListeners;
+  List<StreamSubscription<Event>> fireListeners = [];
 
   void addFirebaseListener(){
     DatabaseReference data = FirebaseDatabase.instance.reference().child('MASTER');
     //resources
     fireListeners.add(data.child('resources').onChildAdded.listen((Event event){
-      building[event.snapshot.key] = event.snapshot.value;
+      resources[event.snapshot.key] = event.snapshot.value;
+      //print('R '+ event.snapshot.value.toString());
       _masterNation.add('resources');
     }));
     fireListeners.add(data.child('resources').onChildChanged.listen((Event event){
-      building[event.snapshot.key] = event.snapshot.value;
+      resources[event.snapshot.key] = event.snapshot.value;
+      //print('B '+ event.snapshot.value.toString());
       _masterNation.add('resources');
     }));
     //building
     fireListeners.add(data.child('building').onChildAdded.listen((Event event){
       building[event.snapshot.key] = event.snapshot.value;
+      //print('B '+ event.snapshot.value.toString());
       _masterNation.add('building');
     }));
     fireListeners.add(data.child('building').onChildChanged.listen((Event event){
@@ -625,11 +628,12 @@ class Master{
     }));
     //specialBuilding
     fireListeners.add(data.child('specialBuilding').onChildAdded.listen((Event event){
-      building[event.snapshot.key] = event.snapshot.value;
+      specialBuilding[event.snapshot.key] = event.snapshot.value;
+      //print('S '+ event.snapshot.value.toString());
       _masterNation.add('specialBuilding');
     }));
     fireListeners.add(data.child('specialBuilding').onChildChanged.listen((Event event){
-      building[event.snapshot.key] = event.snapshot.value;
+      specialBuilding[event.snapshot.key] = event.snapshot.value;
       _masterNation.add('specialBuilding');
     }));
   }

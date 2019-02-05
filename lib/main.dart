@@ -8,10 +8,11 @@ import 'package:firebase_core/firebase_core.dart';
 import 'dart:io' show Platform;
 import 'package:flutter/services.dart';
 
-//import 'package:flutter/foundation.dart' show debugDefaultTargetPlatformOverride; // for desktop embedder
+import 'package:flutter/foundation.dart' show debugDefaultTargetPlatformOverride; // for desktop embedder
 
 void main() async {
 
+  //TargetPlatform targetPlatform;
   final FirebaseApp app = await FirebaseApp.configure(
     name: 'db',
     options: FirebaseOptions(
@@ -22,7 +23,7 @@ void main() async {
       storageBucket: "nyes-debuy.appspot.com",
     ),
   );
-  //debugDefaultTargetPlatformOverride = TargetPlatform.fuchsia; // for desktop embedder
+  //debugDefaultTargetPlatformOverride = TargetPlatform.android; // for desktop embedder
   runApp(new MyApp());
 }
 

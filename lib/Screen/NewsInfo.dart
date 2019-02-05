@@ -105,7 +105,7 @@ class _NewsInfoState extends State<NewsInfo>{
                             children: <Widget>[
                               Text('${news[index].value['title']}', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: Colors.white),),
                               Expanded(
-                                child: Text('${news[index].value['info']}', style: TextStyle(color: Colors.white70, fontSize: 13),),
+                                child: Text('${news[index].value['info']}', style: TextStyle(color: Colors.white70, fontSize: 12),),
                               ),
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.start,

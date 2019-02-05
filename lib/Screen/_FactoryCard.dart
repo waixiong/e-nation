@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-
+import 'package:flutter/services.dart';
+import 'dart:developer';
 import 'package:e_nation/Logic/Nation.dart';
 
 abstract class _ResourceItem extends StatelessWidget {
@@ -42,10 +43,11 @@ class FactoryCard extends StatelessWidget {
   final String tag;
   final String facImg;
   final String resImg;
-  Map<String, dynamic> factoryData;
+  Map<dynamic, dynamic> factoryData;
 
   @override
   Widget build(BuildContext context) {
+    //print('Fac Img is : '+facImg);
     return Card(
       child: Container(
         width: MediaQuery.of(context).size.width,
@@ -186,7 +188,7 @@ class _FactoryInputList extends State<FactoryInputList>{
       ),
     ));
     String neededList = '';
-    Map<String, num> map = widget.nation.master.building[widget.resource]['input'];
+    Map<dynamic, dynamic> map = widget.nation.master.building[widget.resource]['input'];
     map.forEach((resource, value){
       if(widget.nation.resourcesMatrix['Solar Panel']){
         value = value * 0.9;
@@ -443,7 +445,7 @@ class _FactoryInputList extends State<FactoryInputList>{
                 // return object of type Dialog
                 return AlertDialog(
                   title: new Text('Error'),
-                  content: new Text(e.toString()),
+                  content: new Text(e.toString() + ' '),
                   actions: <Widget>[
                     // usually buttons at the bottom of the dialog
                     new FlatButton(

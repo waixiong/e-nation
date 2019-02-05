@@ -108,7 +108,7 @@ class _TradeHistoryState extends State<TradeHistory>{
                               '${data[index~/2].value['exe']=='S'? 'SUCCESS':(data[index~/2].value['exe']=='P'? 'PARTIAL':(data[index~/2].value['exe']=='V'?'VOID':'FAIL'))}',
                               style: TextStyle(
                                 fontSize: 10,
-                                color: data[index~/2].value['exe']=='S'? Colors.green:(data[index~/2].value['exe']=='S'? Colors.orange:Colors.red)
+                                color: data[index~/2].value['exe']=='S'? Colors.green:(data[index~/2].value['exe']=='P'? Colors.orange:Colors.red)
                               ),
                               textAlign: TextAlign.right,
                             )
@@ -117,7 +117,14 @@ class _TradeHistoryState extends State<TradeHistory>{
                       ),
                       new Container(
                         alignment: Alignment.centerLeft,
-                        child: Text('${data[index~/2].value['quantity']} ${data[index~/2].value['resource']} @ price ${data[index~/2].value['price'].toStringAsFixed(2)}', textAlign: TextAlign.left,),
+                        child: Row(
+                          children: <Widget>[
+                            new Expanded(
+                              child: Text('${data[index~/2].value['quantity']} ${data[index~/2].value['resource']} @ price ${data[index~/2].value['price'].toStringAsFixed(2)}', textAlign: TextAlign.left,),
+                            ),
+                            new Text('Session:${widget.nation.session}', style: TextStyle(fontSize: 12),)
+                          ],
+                        ),
                       ),
                       Row(
                         children: <Widget>[

@@ -183,6 +183,7 @@ class Nation{
     bool created = true;
     fireListeners = new List<StreamSubscription<Event>>();
     this.currentUser = currentUser;
+    master.addFirebaseListener();
     master.masterNation.listen((change){
       if(change == 'resources'){
         _homeRefresh.add(true);
@@ -399,6 +400,7 @@ class Nation{
     fireListeners.forEach((listener){
       listener.cancel();
     });
+    master.cancelFire();
   }
 
   void end(){
@@ -460,7 +462,7 @@ class Nation{
   }
 
   String assignResources(String resource, int factory, int human){
-    Map<String, double> factoryInput = master.building[resource]['input'];//input statistic
+    Map<dynamic, dynamic> factoryInput = master.building[resource]['input'];//input statistic
     Map<dynamic, dynamic> input = this.building[resource][factory]['input'];//what have been input
     assert(this.humanAvailable + input['human'] >= human, 'Human not enough');
     //print(this.humanAvailable + input['human'] >= human);
@@ -514,7 +516,7 @@ class Nation{
   String upgradeBuilding(String resource, int factory){
     assignResources(resource, factory, 0);
     Map<dynamic, dynamic> target = this.building[resource][factory];
-    Map<String, int> upgrade = master.building[resource]['upgrade'][target['level']+1];
+    Map<dynamic, dynamic> upgrade = master.building[resource]['upgrade'][target['level']+1];
     if(!(this.humanAvailable >= upgrade['human'])){
       return 'No enough labour';
     }
@@ -560,7 +562,7 @@ class Nation{
 
   bool cancelUpgradeBuilding(String resource, int factory){
     Map<dynamic, dynamic> target = this.building[resource][factory];
-    Map<String, int> upgrade = master.building[resource]['upgrade'][target['level']+1];
+    Map<dynamic, dynamic> upgrade = master.building[resource]['upgrade'][target['level']+1];
     upgrade.forEach((key, value){
       if(key == 'human')
         //humanAvailable += upgrade['human'];
@@ -575,7 +577,7 @@ class Nation{
   }
 
   String newBuilding(String resource){
-    Map<String, int> upgrade = master.building[resource]['upgrade'][0];
+    Map<dynamic, dynamic> upgrade = master.building[resource]['upgrade'][0];
     if(!(this.humanAvailable >= upgrade['human'])){
       return 'No enough labour';
     }
@@ -620,7 +622,7 @@ class Nation{
   }
 
   bool cancelNewBuilding(String resource){
-    Map<String, int> upgrade = master.building[resource]['upgrade'][0];
+    Map<dynamic, dynamic> upgrade = master.building[resource]['upgrade'][0];
     upgrade.forEach((key, value){
       if(key == 'human')
         //humanAvailable += upgrade['human'];
@@ -636,7 +638,7 @@ class Nation{
 
   String upgradeSpecialBuilding(String type){
     Map<dynamic, dynamic> target = this.specialBuilding[type];
-    Map<String, int> upgrade = master.specialBuilding[type]['upgrade'][target['level']];
+    Map<dynamic, dynamic> upgrade = master.specialBuilding[type]['upgrade'][target['level']];
     if(!(this.humanAvailable >= upgrade['human'])){
       return 'No enough labour';
     }
@@ -674,7 +676,7 @@ class Nation{
 
   bool cancelUpgradeSpecialBuilding(String type){
     Map<dynamic, dynamic> target = this.specialBuilding[type];
-    Map<String, int> upgrade = master.specialBuilding[type]['upgrade'][target['level']];
+    Map<dynamic, dynamic> upgrade = master.specialBuilding[type]['upgrade'][target['level']];
     upgrade.forEach((key, value){
       if(key == 'human')
         //humanAvailable += upgrade['human'];
@@ -870,7 +872,7 @@ class Nation{
     if(bid){
       TransactionResult resourceChange = await _user.child('resources').runTransaction((MutableData mutableData) async {
         if(mutableData.value != null) {
-          mutableData.value['Money'] -= quantity * price;
+          mutableData.value['Money'] -= (quantity * price) * 1.01;
         }
         return mutableData;
       });
@@ -878,7 +880,7 @@ class Nation{
         print('resourceChange recommit');
         resourceChange = await _user.child('resources').runTransaction((MutableData mutableData) async {
           if(mutableData.value != null) {
-            mutableData.value['Money'] -= quantity * price;
+            mutableData.value['Money'] -= quantity * price * 1.01;
           }
           return mutableData;
         });
@@ -886,9 +888,9 @@ class Nation{
       TransactionResult tradepoolChange = await _user.child('tradepool').runTransaction((MutableData mutableData) async {
         if(mutableData.value != null){
           if(mutableData.value['Money'] == null)
-            mutableData.value['Money'] = quantity * price;
+            mutableData.value['Money'] = quantity * price * 1.01;
           else
-            mutableData.value['Money'] += quantity * price;
+            mutableData.value['Money'] += quantity * price * 1.01;
         }
         return mutableData;
       });
@@ -897,9 +899,9 @@ class Nation{
         tradepoolChange = await _user.child('tradepool').runTransaction((MutableData mutableData) async {
           if(mutableData.value == null) {
             mutableData.value = {};
-            mutableData.value['Money'] = quantity * price;
+            mutableData.value['Money'] = quantity * price * 1.01;
           }else {
-            mutableData.value['Money'] += quantity * price;
+            mutableData.value['Money'] += quantity * price * 1.01;
           }
           return mutableData;
         });
@@ -935,7 +937,7 @@ class Nation{
       while(!resourceChange.committed){
         resourceChange = await _user.child('resources').runTransaction((MutableData mutableData) async {
           if(mutableData.value != null) {
-            mutableData.value[resource] -= quantity;
+            mutableData.value[resource] -= quantity;;
           }
           return mutableData;
         });
@@ -956,6 +958,12 @@ class Nation{
               mutableData.value[resource] = quantity;
             else
               mutableData.value[resource] += quantity;
+          }
+          if(mutableData.value == null) {
+            mutableData.value = {};
+            mutableData.value['Money'] = quantity * price * 0.01;
+          }else {
+            mutableData.value['Money'] += quantity * price * 0.01;
           }
           return mutableData;
         });
@@ -994,6 +1002,7 @@ class Nation{
     }
     makerData['quantity'] = quantity;
     makerData['resource'] = resource;
+    makerData['session'] = session;
     makerData['makerKey'] = makerKey;
     final TransactionResult transactionResult = await _publicTrade.runTransaction((MutableData mutableData) async {
       mutableData.value = makerData;
@@ -1019,13 +1028,13 @@ class Nation{
     if(bid){
       TransactionResult resourceChange = await _user.child('resources').runTransaction((MutableData mutableData) async {
         if(mutableData.value != null){
-          mutableData.value['Money'] += trade.value['quantity'] * trade.value['price'];
+          mutableData.value['Money'] += (trade.value['quantity'] * trade.value['price']) * 1.01;
         }
         return mutableData;
       });
       TransactionResult tradepoolChange = await _user.child('tradepool').runTransaction((MutableData mutableData) async {
         if(mutableData.value != null){
-          mutableData.value['Money'] -= trade.value['quantity'] * trade.value['price'];
+          mutableData.value['Money'] -= trade.value['quantity'] * trade.value['price'] * 1.01;
         }
         return mutableData;
       });

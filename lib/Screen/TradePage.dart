@@ -9,11 +9,12 @@ import 'dart:async';
 import 'dart:math';
 import 'dart:convert';
 
-import 'package:e_nation/Screen/LoginPage.dart';
 import 'package:e_nation/Logic/Nation.dart';
 import 'package:e_nation/Logic/TradeManager.dart';
 import 'package:e_nation/Screen/identityImage.dart';
 import 'package:e_nation/Screen/_FactoryCard.dart';
+import 'package:e_nation/Screen/Loading.dart';
+import 'package:e_nation/Screen/Map.dart';
 
 class QRPage extends StatefulWidget{
   QRPage({Key key, this.JSON, this.targetName, this.chosenResource, this.q, this.p, this.price, this.buyerImage});
@@ -395,7 +396,7 @@ class _PrivateTradeState extends State<PrivateTrade> with AutomaticKeepAliveClie
                 if(JSON != null){
                   Map<dynamic, dynamic> scanTrade = json.decode(JSON);
                   if(scanTrade['buyer'] == widget.currentUser.uid){
-                    if(widget.nation.resources['Money'] < scanTrade['quantity'] * scanTrade['price']) {
+                    if(widget.nation.resources['Money'] < scanTrade['quantity'] * scanTrade['price'] * (1 + distanceBetween(widget.tradeManager.nationList[scanTrade['buyer']]['location'], widget.tradeManager.nationList[scanTrade['seller']]['location'])/400)) {
                       Scaffold.of(context).hideCurrentSnackBar();
                       Scaffold.of(context).showSnackBar(SnackBar(content: new Text('\$${scanTrade['price'] * scanTrade['quantity']} needed for trade')));
                     }else{
@@ -442,18 +443,20 @@ class _TradeExecutionMakerDialog extends State<TradeExecutionMakerDialog>{
   double price = 0.00;
   int quantity = 0;
   final _textKey = GlobalKey<FormState>();
+  bool executing = false;
 
   @override
   Widget build(BuildContext context) {
     // TODO: implement build
     int max = widget.bid?  widget.nation.resources['Money'].toInt() : widget.nation.resources[widget.resource];
-    return SimpleDialog(
-      children: <Widget>[
-        new Text('Enter Your Order', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w600,),),
-        new Container(
-          padding: EdgeInsets.fromLTRB(0, 0, 0, 10),
-          //width: MediaQuery.of(context).size.width * 0.6,
-          child: new Form(
+    List<Widget> stack = <Widget>[
+      new Column(
+        children: <Widget>[
+          new Text('Enter Your Order', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w600,),),
+          new Container(
+            padding: EdgeInsets.fromLTRB(0, 0, 0, 10),
+            //width: MediaQuery.of(context).size.width * 0.6,
+            child: new Form(
               key: _textKey,
               child: new Column(
                 children: <Widget>[
@@ -463,7 +466,7 @@ class _TradeExecutionMakerDialog extends State<TradeExecutionMakerDialog>{
                     decoration: new InputDecoration(labelText: 'Price'),
                     validator: (value){
                       try{
-                        price = double.parse(value);
+                        price = (double.parse(value)*100).roundToDouble() / 100;
                         print(price);
                         return null;
                       }catch(e){
@@ -488,6 +491,9 @@ class _TradeExecutionMakerDialog extends State<TradeExecutionMakerDialog>{
                           if(widget.nation.resources[widget.resource] < quantity)
                             return 'Please enter what you afford';
                         }
+                        if(quantity*price*1.01 > widget.nation.resources['Money']){
+                          return 'Not enough money for logistic cost';
+                        }
                         return null;
                       }catch(e){
                         return 'Please enter a integer as quantity';
@@ -496,48 +502,65 @@ class _TradeExecutionMakerDialog extends State<TradeExecutionMakerDialog>{
                     controller: quantityController,
                   )
                 ],
-              )
-          ),
-        ),
-        new Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: <Widget>[
-            new RaisedButton(
-              onPressed: (){ Navigator.pop(context); },
-              child: new Text('CANCEL', style: TextStyle(fontWeight: FontWeight.bold),),
+              ),
             ),
-            new RaisedButton(
-              onPressed: () async {
-                if(_textKey.currentState.validate()){
-                  String id = (Random.secure().nextDouble() * 9223372036854775807).floor().toRadixString(16);
-                  bool success = await widget.nation.publicTradeMaker(widget.bid, quantity, price, widget.resource, id);
-//                  List<bool> s = [];
-//                  for(int i = 0; i < 10; i++){
-//                    String id = (Random.secure().nextDouble() * 9223372036854775807).floor().toRadixString(16);
-//                    bool success = await widget.nation.publicTradeMaker(widget.bid, quantity, price, widget.resource, id);
-//                    s.add(success);
-//                  }
-//                  bool success = true;
-//                  s.forEach((t){ if(!t) success = false; });
-                  if(success)
-                    Navigator.pop(context);
-                  else {
-                    Navigator.pop(context);
-                    showDialog(
-                      context: context,
-                      builder: (BuildContext context){
-                        return AlertDialog(
-                          title: new Text('ERROR'),
-                          content: new Text('Problem occur in the order'),
+          ),
+          new Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: <Widget>[
+              new RaisedButton(
+                onPressed: (){ Navigator.pop(context); },
+                child: new Text('CANCEL', style: TextStyle(fontWeight: FontWeight.bold),),
+              ),
+              new RaisedButton(
+                onPressed: () async {
+                  if(_textKey.currentState.validate()){
+                    String id = (Random.secure().nextDouble() * 9223372036854775807).floor().toRadixString(16);
+                    setState(() { executing = true; });
+                    widget.nation.publicTradeMaker(widget.bid, quantity, price, widget.resource, id).then((success){
+                      if(success)
+                        Navigator.pop(context);
+                      else {
+                        Navigator.pop(context);
+                        showDialog(
+                            context: context,
+                            builder: (BuildContext context){
+                              return AlertDialog(
+                                title: new Text('ERROR'),
+                                content: new Text('Problem occur in the order'),
+                              );
+                            }
                         );
                       }
-                    );
+                    });
                   }
-                }
-              },
-              child: new Text('SEND ORDER', style: TextStyle(fontWeight: FontWeight.bold),),
-            )
-          ],
+                },
+                child: new Text('SEND ORDER', style: TextStyle(fontWeight: FontWeight.bold),),
+              )
+            ],
+          )
+        ],
+      )
+    ];
+    if(executing){
+      stack.add(new Positioned(
+        left: 50, top: 60, right: 50, bottom: 60,
+        child: Container(
+          //width: 160,
+          //height: 100,
+          decoration: BoxDecoration(color: Color.fromARGB(96, 0, 0, 0), borderRadius: BorderRadius.all(Radius.circular(20))),
+          child: new Center(
+            child: TradeExecuting(),//TRADE EXECUTING
+          ),
+        ),
+      ));
+    }
+    print(MediaQuery.of(context).size.toString());
+    return SimpleDialog(
+      children: <Widget>[
+        new Stack(
+          //fit: StackFit.passthrough,
+          children: stack,
         )
       ],
     );
@@ -562,6 +585,7 @@ class _TradeExecutionTakerDialog extends State<TradeExecutionTakerDialog>{
   TextEditingController quantityController = TextEditingController();
   int quantity = 0;
   final _textKey = GlobalKey<FormState>();
+  bool executing = false;
 
   @override
   void initState(){
@@ -572,13 +596,13 @@ class _TradeExecutionTakerDialog extends State<TradeExecutionTakerDialog>{
         if(key == widget.makerKey){
           Navigator.pop(context);
           showDialog(
-              context: context,
-              builder: (BuildContext context){
-                return AlertDialog(
-                  title: new Text('WARNING'),
-                  content: new Text('The trade is delete by the owner'),
-                );
-              }
+            context: context,
+            builder: (BuildContext context){
+              return AlertDialog(
+                title: new Text('WARNING'),
+                content: new Text('The trade is delete by the owner'),
+              );
+            }
           );
         }
       }
@@ -593,42 +617,47 @@ class _TradeExecutionTakerDialog extends State<TradeExecutionTakerDialog>{
 
   @override
   Widget build(BuildContext context) {
+    print('build dialog');
     // TODO: implement build
     int max = widget.buy?  (widget.nation.resources['Money']/widget.makerData['price']).toInt() : widget.nation.resources[widget.resource];
-    return SimpleDialog(
-      children: <Widget>[
-        new Padding(
-          padding: EdgeInsets.only(bottom: 10),
-          child: new Row(
-            children: <Widget>[
-              new Padding(
-                padding: EdgeInsets.only(left: 10, right: 10),
-                child: identity(widget.buy? widget.makerData['seller']:widget.makerData['buyer']),
-              ),
-              new Expanded(
-                child: new Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text('${widget.tradeManager.nationList[ widget.buy? widget.makerData['seller']:widget.makerData['buyer'] ]['name']}', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700), textAlign: TextAlign.center,),
-                    Text('Quantity ${widget.buy? 'Sell':'Buy'}: ${widget.makerData['quantity']}'),
-                    Text('${widget.buy? 'Ask':'Bid'} Price: ${widget.makerData['price'].toStringAsFixed(2)}')
-                  ],
+    double distance = distanceBetween(widget.tradeManager.nationList[ widget.buy? widget.makerData['seller']:widget.makerData['buyer'] ]['location'], widget.tradeManager.nationList[widget.nation.currentUser.uid]['location']);
+    List<Widget> stack = <Widget>[
+      new Column(
+        children: <Widget>[
+          new Padding(
+            padding: EdgeInsets.only(bottom: 10),
+            child: new Row(
+              children: <Widget>[
+                new Padding(
+                  padding: EdgeInsets.only(left: 10, right: 10),
+                  child: identity(widget.buy? widget.makerData['seller']:widget.makerData['buyer']),
                 ),
-              )
-            ],
+                new Expanded(
+                  child: new Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text('${widget.tradeManager.nationList[ widget.buy? widget.makerData['seller']:widget.makerData['buyer'] ]['name']}', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700), textAlign: TextAlign.center,),
+                      Text('Quantity ${widget.buy? 'Sell':'Buy'}: ${widget.makerData['quantity']}'),
+                      Text('${widget.buy? 'Ask':'Bid'} Price: ${widget.makerData['price'].toStringAsFixed(2)}'),
+                      Text('Distance : ${distance.toStringAsFixed(2)}')
+                    ],
+                  ),
+                )
+              ],
+            ),
           ),
-        ),
-        new Padding(
-          padding: EdgeInsets.only(left: 10, right: 10),
-          child: new Text('Enter Your Order', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500,),),
-        ),
-        new Padding(
-          padding: EdgeInsets.only(left: 10, right: 10),
-          child: new Container(
-            padding: EdgeInsets.fromLTRB(0, 0, 0, 10),
-            //width: MediaQuery.of(context).size.width * 0.6,
-            child: new Form(
+          new Padding(
+            padding: EdgeInsets.only(left: 10, right: 10),
+            child: new Text('Enter Quantity to ${widget.buy? 'Buy':'Sell'}', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500,),),
+          ),
+          new Padding(
+            padding: EdgeInsets.only(left: 10, right: 10),
+            child: new Container(
+              padding: EdgeInsets.fromLTRB(0, 0, 0, 10),
+              //width: MediaQuery.of(context).size.width * 0.6,
+              child: new Form(
                 key: _textKey,
+                onChanged: (){ _textKey.currentState.validate(); setState(() {});},
                 child: new Column(
                   children: <Widget>[
                     new TextFormField(
@@ -638,10 +667,13 @@ class _TradeExecutionTakerDialog extends State<TradeExecutionTakerDialog>{
                       validator: (value){
                         try{
                           quantity = int.parse(value);
+                          //setState(() {});
                           if(quantity > max)
                             return 'Please enter what you can afford';
                           if(quantity > widget.makerData['quantity'])
                             return 'Please enter available quantity';
+                          if(widget.buy? widget.makerData['price'] * quantity * ((distance-1)/100 + 1) > widget.nation.resources['Money'] : widget.makerData['price'] * quantity * ((distance-1)/100) > widget.nation.resources['Money'])
+                            return 'Not enough money for logistic cost';
                           return null;
                         }catch(e){
                           return 'Please enter a integer as quantity';
@@ -650,41 +682,68 @@ class _TradeExecutionTakerDialog extends State<TradeExecutionTakerDialog>{
                       controller: quantityController,
                     ),
                   ],
-                )
+                ),
+              ),
             ),
           ),
-        ),
-        new Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: <Widget>[
-            new RaisedButton(
-              onPressed: (){ Navigator.pop(context); },
-              child: new Text('CANCEL', style: TextStyle(fontWeight: FontWeight.bold),),
-            ),
-            new RaisedButton(
-              onPressed: () async {
-                if(_textKey.currentState.validate()){
-                  String id = (Random.secure().nextDouble() * 9223372036854775807).floor().toRadixString(16);
-                  bool success = await widget.nation.publicTradeTaker(widget.buy, quantity, widget.resource, id, json.decode(json.encode(widget.makerData)), widget.makerKey);
-                  if(success)
-                    Navigator.pop(context);
-                  else {
-                    Navigator.pop(context);
-                    showDialog(
-                        context: context,
-                        builder: (BuildContext context){
-                          return AlertDialog(
-                            title: new Text('ERROR'),
-                            content: new Text('Problem occur in the transaction'),
-                          );
-                        }
-                    );
+          new Padding(
+            padding: EdgeInsets.only(left: 10, right: 10),
+            child: new Text('Logistic Cost : ${(widget.makerData['price'] * quantity * ((distance-1)/100)).toStringAsFixed(2)}',),
+          ),
+          new Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: <Widget>[
+              new RaisedButton(
+                onPressed: (){ Navigator.pop(context); },
+                child: new Text('CANCEL', style: TextStyle(fontWeight: FontWeight.bold),),
+              ),
+              new RaisedButton(
+                onPressed: () async {
+                  if(_textKey.currentState.validate()){
+                    String id = (Random.secure().nextDouble() * 9223372036854775807).floor().toRadixString(16);
+                    setState(() { executing = true; });
+                    widget.nation.publicTradeTaker(widget.buy, quantity, widget.resource, id, json.decode(json.encode(widget.makerData)), widget.makerKey).then((success){
+                      if(success)
+                        Navigator.pop(context);
+                      else {
+                        Navigator.pop(context);
+                        showDialog(
+                          context: context,
+                          builder: (BuildContext context){
+                            return AlertDialog(
+                              title: new Text('ERROR'),
+                              content: new Text('Problem occur in the transaction'),
+                            );
+                          }
+                        );
+                      }
+                    });
                   }
-                }
-              },
-              child: new Text('SEND ORDER', style: TextStyle(fontWeight: FontWeight.bold),),
-            )
-          ],
+                },
+                child: new Text('SEND ORDER', style: TextStyle(fontWeight: FontWeight.bold),),
+              )
+            ],
+          )
+        ],
+      )
+    ];
+    if(executing){
+      stack.add(new Positioned(
+        left: 50, top: 60, right: 50, bottom: 60,
+        child: Container(
+          //width: 160,
+          //height: 100,
+          decoration: BoxDecoration(color: Color.fromARGB(96, 0, 0, 0), borderRadius: BorderRadius.all(Radius.circular(20))),
+          child: new Center(
+            child: TradeExecuting(),//TRADE EXECUTING
+          ),
+        ),
+      ));
+    }
+    return SimpleDialog(
+      children: <Widget>[
+        new Stack(
+          children: stack,
         )
       ],
     );
@@ -740,13 +799,15 @@ class TradeCancel extends StatelessWidget{
 }
 
 class TradeResource extends StatefulWidget{
-  TradeResource({Key key, this.resource, this.imgPath, this.tradeManager, this.nation});
+  TradeResource({Key key, this.resource, this.imgPath, this.tradeManager, this.nation}){
+    print('${this.resource} construct');
+  }
   String resource;
   String imgPath;
   TradeManager tradeManager;
   Nation nation;
   @override
-  State<StatefulWidget> createState() => new _TradeResourceState();
+  _TradeResourceState createState() => new _TradeResourceState();
 }
 
 class _TradeResourceState extends State<TradeResource>{
@@ -754,16 +815,18 @@ class _TradeResourceState extends State<TradeResource>{
   List<String> asks;
   List<String> bids;
   TradeExecutionTakerDialog dialog;
-  ScaffoldState _scaffoldState;
+  //ScaffoldState _scaffoldState;
+  List<StreamSubscription<Event>> fireListener = <StreamSubscription<Event>>[];
 
   @override
   void initState() {
     // TODO: implement initState
     super.initState();
+    print('INIT Trade Resources');
     asks = <String>[];
     bids = <String>[];
     DatabaseReference A = FirebaseDatabase.instance.reference().child('trade/${widget.resource}/Ask');
-    A.onChildAdded.listen((event){
+    fireListener.add(A.onChildAdded.listen((event){
       widget.tradeManager.tradeQueue[widget.resource]['Ask'][event.snapshot.key] = event.snapshot.value; setState(() {});
       if(asks.length == 0)
         asks.add(event.snapshot.key);
@@ -779,21 +842,19 @@ class _TradeResourceState extends State<TradeResource>{
         if(!done)
           asks.add(event.snapshot.key);
       }
-    });
-    A.onChildChanged.listen((event){
+    }));
+    fireListener.add(A.onChildChanged.listen((event){
       widget.tradeManager.tradeQueue[widget.resource]['Ask'][event.snapshot.key] = event.snapshot.value; setState(() {});
-    });
-    A.onChildRemoved.listen((event){
-      print(event.snapshot.key + ' is cancel');
+    }));
+    fireListener.add(A.onChildRemoved.listen((event){
       widget.tradeManager.tradeQueue[widget.resource]['Ask'].remove(event.snapshot.key); setState(() {});
       asks.remove(event.snapshot.key);
       if(dialog != null){
-        print(event.snapshot.key + ' is cancel');
         dialog.checkTrade(event.snapshot.key);
       }
-    });
+    }));
     DatabaseReference B = FirebaseDatabase.instance.reference().child('trade/${widget.resource}/Bid');
-    B.onChildAdded.listen((event){
+    fireListener.add(B.onChildAdded.listen((event){
       widget.tradeManager.tradeQueue[widget.resource]['Bid'][event.snapshot.key] = event.snapshot.value; setState(() {});
       if(bids.length == 0)
         bids.add(event.snapshot.key);
@@ -809,26 +870,35 @@ class _TradeResourceState extends State<TradeResource>{
         if(!done)
           bids.add(event.snapshot.key);
       }
-    });
-    B.onChildChanged.listen((event){
+    }));
+    fireListener.add(B.onChildChanged.listen((event){
       widget.tradeManager.tradeQueue[widget.resource]['Bid'][event.snapshot.key] = event.snapshot.value; setState(() {});
-    });
-    B.onChildRemoved.listen((event){
+    }));
+    fireListener.add(B.onChildRemoved.listen((event){
       widget.tradeManager.tradeQueue[widget.resource]['Bid'].remove(event.snapshot.key); setState(() {});
       bids.remove(event.snapshot.key);
       if(dialog != null){
         dialog.checkTrade(event.snapshot.key);
       }
-    });
+    }));
     DatabaseReference data = FirebaseDatabase.instance.reference().child('trade/${widget.resource}/data');
-    data.onChildAdded.listen((event){
+    fireListener.add(data.onChildAdded.listen((event){
       widget.tradeManager.trade[widget.resource][event.snapshot.key] = event.snapshot.value.toDouble();
       setState(() {});
-    });
-    data.onChildChanged.listen((event){
+    }));
+    fireListener.add(data.onChildChanged.listen((event){
       widget.tradeManager.trade[widget.resource][event.snapshot.key] = event.snapshot.value.toDouble();
       setState(() {});
+    }));
+  }
+
+  @override
+  void dispose(){
+    print('DISPOSE Trade Resources');
+    fireListener.forEach((listener){
+      listener.cancel();
     });
+    super.dispose();
   }
 
   Widget identity(String id){
@@ -1075,16 +1145,24 @@ class TradeCard extends StatefulWidget{
   TradeManager tradeManager;
   Nation nation;
 
+
   @override
   State<TradeCard> createState() => new _TradeCardState();
 }
 
 class _TradeCardState extends State<TradeCard> with AutomaticKeepAliveClientMixin<TradeCard>{
 
+  StreamSubscription change;
+
   @override
   void initState() {
     // TODO: implement initState
     super.initState();
+    change = widget.nation.master.masterNation.listen((data){
+      if(data == 'resources'){
+        setState(() {});
+      }
+    });
     DatabaseReference data = FirebaseDatabase.instance.reference().child('trade/${widget.resource}/data');
     data.onChildAdded.listen((event){
       widget.tradeManager.trade[widget.resource][event.snapshot.key] = event.snapshot.value.toDouble();
@@ -1116,15 +1194,6 @@ class _TradeCardState extends State<TradeCard> with AutomaticKeepAliveClientMixi
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: <Widget>[
                   Text(widget.resource, style: new TextStyle(fontSize: 18.0),),
-                  Container(
-                    width: 120.0,
-                    height: 120.0,
-                    padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                    child: Hero(
-                      tag: widget.resource + 'Trade',
-                      child: Image.asset(widget.imgPath),
-                    ),
-                  ),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: <Widget>[
@@ -1132,17 +1201,39 @@ class _TradeCardState extends State<TradeCard> with AutomaticKeepAliveClientMixi
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: <Widget>[Text('Buy'), Text('${bid != null && bid != 0? bid.toStringAsFixed(2) : '--'}')],
                       ),
-                      new Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: <Widget>[
-                          Text('${widget.tradeManager.trade[widget.resource]['LastDone'].toStringAsFixed(2)}', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),),
-                          Text('Domestic Price : ${widget.tradeManager.master.resources[widget.resource]['price'].toStringAsFixed(2)}')
-                        ],
+                      Container(
+                        width: 120.0,
+                        height: 120.0,
+                        padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                        child: Hero(
+                          tag: widget.resource + 'Trade',
+                          child: Image.asset(widget.imgPath),
+                        ),
                       ),
                       new Column(
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: <Widget>[Text('Sell'), Text('${ask != null && ask != 0? ask.toStringAsFixed(2) : '--'}')],
                       )
+                    ],
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: <Widget>[
+//                      new Column(
+//                        crossAxisAlignment: CrossAxisAlignment.start,
+//                        children: <Widget>[Text('Buy'), Text('${bid != null && bid != 0? bid.toStringAsFixed(2) : '--'}')],
+//                      ),
+                      new Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: <Widget>[
+                          Text('${widget.tradeManager.trade[widget.resource]['LastDone'].toStringAsFixed(2)}', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),),
+                          Text('Domestic Price : ${widget.nation.master.resources[widget.resource]['price'].toStringAsFixed(2)}')
+                        ],
+                      )
+//                      new Column(
+//                        crossAxisAlignment: CrossAxisAlignment.end,
+//                        children: <Widget>[Text('Sell'), Text('${ask != null && ask != 0? ask.toStringAsFixed(2) : '--'}')],
+//                      )
                     ],
                   )
                 ],
@@ -1155,7 +1246,7 @@ class _TradeCardState extends State<TradeCard> with AutomaticKeepAliveClientMixi
           ),
         ),
       ),
-    );;
+    );
   }
 }
 
@@ -1182,7 +1273,7 @@ class TradePage extends StatefulWidget {
   _TradePageState createState() => new _TradePageState(auth: auth);
 }
 
-class _TradePageState extends State<TradePage> with SingleTickerProviderStateMixin<TradePage>, AutomaticKeepAliveClientMixin<TradePage> {
+class _TradePageState extends State<TradePage> with TickerProviderStateMixin<TradePage>, AutomaticKeepAliveClientMixin<TradePage> {
   final GlobalKey<ScaffoldState> _scaffoldKey = new GlobalKey<ScaffoldState>();
   _TradePageState({Key key, this.auth,});
   FirebaseUser currentUser;//User Holder
@@ -1202,8 +1293,12 @@ class _TradePageState extends State<TradePage> with SingleTickerProviderStateMix
   ];
   List<Widget>_tabPages;
   PrivateTrade _privateTrade;
-  PageController _publicPageController;
-  PageView _publicPage;
+  TabController _publicTabController;
+  TabBarView _publicPage;
+  static const _publicTabs = <Tab>[
+    Tab(text: 'RESOURCE',),
+    Tab(text: 'PRODUCT',)
+  ];
 
   @override
   void initState(){
@@ -1215,13 +1310,10 @@ class _TradePageState extends State<TradePage> with SingleTickerProviderStateMix
     if(widget._privateTrade == null){
       widget._privateTrade = privateTrade();
     }
-    _publicPageController = PageController(
-        initialPage: 0,
-        keepPage: true
-    );
-    _publicPage = PageView(
-      physics: NeverScrollableScrollPhysics(),
-      controller: _publicPageController,
+    _publicTabController = TabController(length: 2, vsync: this);
+    _publicPage = TabBarView(
+      //physics: NeverScrollableScrollPhysics(),
+      controller: _publicTabController,
       children: <Widget>[
         publicResourcesTrade(),
         publicProductTrade()
@@ -1258,34 +1350,42 @@ class _TradePageState extends State<TradePage> with SingleTickerProviderStateMix
   Widget publicTrade(BuildContext context){
     return Column(
       children: <Widget>[
-        new Container(
-          height: 50,
-          child: new Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: <Widget>[
-              new Container(
-                width: MediaQuery.of(context).size.width * 0.4,
-                child: OutlineButton(
-                  onPressed: (){
-                    setState(() { _publicPageController.jumpToPage(0); });
-                  },
-                  shape: new RoundedRectangleBorder(borderRadius: new BorderRadius.circular(25.0)),
-                  child: Text('RESOURCE', style: TextStyle(color: Colors.white),),
-                ),
-              ),
-              new Container(
-                width: MediaQuery.of(context).size.width  * 0.4,
-                child: OutlineButton(
-                  onPressed: (){
-                    setState(() { _publicPageController.jumpToPage(1); });
-                  },
-                  shape: new RoundedRectangleBorder(borderRadius: new BorderRadius.circular(25.0)),
-                  child: Text('PRODUCT', style: TextStyle(color: Colors.white),),
-                ),
-              )
-            ],
-          ),
+        TabBar(
+          tabs: _publicTabs,
+          controller: _publicTabController,
+          isScrollable: true,
+          //labelColor: Colors.grey,
+          indicatorColor: Colors.grey,
+          indicator: BoxDecoration(color: Colors.grey, borderRadius: BorderRadius.all(Radius.circular(25)), shape: BoxShape.rectangle,),
         ),
+//        new Container(
+//          height: 50,
+//          child: new Row(
+//            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+//            children: <Widget>[
+//              new Container(
+//                width: MediaQuery.of(context).size.width * 0.4,
+//                child: OutlineButton(
+//                  onPressed: (){
+//                    setState(() { _publicPageController.jumpToPage(0); });
+//                  },
+//                  shape: new RoundedRectangleBorder(borderRadius: new BorderRadius.circular(25.0)),
+//                  child: Text('RESOURCE', style: TextStyle(color: Colors.white),),
+//                ),
+//              ),
+//              new Container(
+//                width: MediaQuery.of(context).size.width  * 0.4,
+//                child: OutlineButton(
+//                  onPressed: (){
+//                    setState(() { _publicPageController.jumpToPage(1); });
+//                  },
+//                  shape: new RoundedRectangleBorder(borderRadius: new BorderRadius.circular(25.0)),
+//                  child: Text('PRODUCT', style: TextStyle(color: Colors.white),),
+//                ),
+//              )
+//            ],
+//          ),
+//        ),
         new Expanded(
           child: _publicPage,
         )
@@ -1341,6 +1441,7 @@ class _TradePageState extends State<TradePage> with SingleTickerProviderStateMix
       body: new Container(
         decoration: BoxDecoration(color: Colors.grey.shade800),
         child: TabBarView(
+          physics: NeverScrollableScrollPhysics(),
           children: <Widget>[
             publicTrade(context),
             widget._privateTrade
@@ -1353,6 +1454,7 @@ class _TradePageState extends State<TradePage> with SingleTickerProviderStateMix
         child: TabBar(
           tabs: _tabs,
           controller: _tabController,
+          isScrollable: false,
         ),
       ),
     );

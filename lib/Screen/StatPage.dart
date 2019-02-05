@@ -85,6 +85,7 @@ class _GDPCardState extends State<GDPCard> {
           measures[datumPair.series.id] = datumPair.datum['comsumption'];
         else if(datumPair.series.id == 'GDP'){
           measures[datumPair.series.id] = datumPair.datum['comsumption'] + datumPair.datum['export'] - datumPair.datum['import'];
+          measures['GDP per Capital'] = measures['GDP'] / datumPair.datum['human'];
         }
         measures['Trade Balance'] = datumPair.datum['export'] - datumPair.datum['import'];
       });
@@ -121,6 +122,7 @@ class _GDPCardState extends State<GDPCard> {
       contains.add(new Text('Consumption : ${_data['Consumption']}'));
       contains.add(new Text('Trade Balance : ${_data['Trade Balance']}'));
       contains.add(new Text('GDP : ${_data['GDP']}'));
+      contains.add(new Text('GDP per Capital : ${_data['GDP per Capital'].toStringAsFixed(3)}'));
     }
 
     return new Card(
@@ -221,6 +223,8 @@ class PopulationCard extends CardChart {
 
 class _PopulationCardState extends State<PopulationCard> {
 
+  int _session;
+  Map<String, num> _data;
   List<charts.Series<dynamic, String>> SeriesList;
   //List<Map<dynamic, dynamic>> GDP;
 
@@ -235,10 +239,33 @@ class _PopulationCardState extends State<PopulationCard> {
     };
   }
 
+  _onSelectionChanged(charts.SelectionModel model) {
+    final selectedDatum = model.selectedDatum;
+
+    int session;
+    final measures = <String, num>{};
+
+    // We get the model that updated with a list of [SeriesDatum] which is
+    // simply a pair of series & datum.
+    //
+    // Walk the selection updating the measures map, storing off the sales and
+    // series name for each selection point.
+    if (selectedDatum.isNotEmpty) {
+      session = selectedDatum.first.datum['session'];
+      measures['Population'] = selectedDatum.first.datum['human'];
+    }
+
+    // Request a build.
+    setState(() {
+      _session = session;
+      _data = measures;
+    });
+  }
+
   void getSeriesList(){
     SeriesList = new List<charts.Series<dynamic, String>>();
     SeriesList.add(new charts.Series(
-      id: 'Comsumption',
+      id: 'Population',
       data: widget.nation.historyData.GDP,
       domainFn: (dynamic data, _) => data['session'].toString(),
       measureFn: (dynamic data, _) => data['human'],
@@ -255,8 +282,18 @@ class _PopulationCardState extends State<PopulationCard> {
       height: MediaQuery.of(context).size.height * 0.3,
       child: new charts.BarChart(
         SeriesList,
+        selectionModels: [
+          new charts.SelectionModelConfig(
+            type: charts.SelectionModelType.info,
+            changedListener: _onSelectionChanged,
+          )
+        ],
       ),
     ));
+    if(_session != null){
+      contains.add(Text('Session ${_session}'));
+      contains.add(Text('Population : ${_data['Population']}'));
+    }
 
     return new Card(
       child: new Column(
@@ -301,7 +338,7 @@ class _GrowthCardState extends State<GrowthCard> {
           widget.nation.historyData.GDP[i]['import'] + widget.nation.historyData.GDP[i-1]['import']).toDouble();
       double oldGDP = (widget.nation.historyData.GDP[i-1]['comsumption'] + widget.nation.historyData.GDP[i-1]['export'] + widget.nation.historyData.GDP[i-1]['import']).toDouble();
       grow.add({
-        'session': i,
+        'session': widget.nation.historyData.GDP[i]['session'],
         'Comsumption': (widget.nation.historyData.GDP[i]['comsumption'] - widget.nation.historyData.GDP[i-1]['comsumption']).toDouble() / widget.nation.historyData.GDP[i-1]['comsumption'] * 100.00,
         //'Export': (widget.nation.historyData.GDP[i]['export'] - widget.nation.historyData.GDP[i-1]['export']).toDouble() / widget.nation.historyData.GDP[i-1]['export'] * 100.00,
         //'Import': (widget.nation.historyData.GDP[i]['import'] - widget.nation.historyData.GDP[i-1]['import']).toDouble() / widget.nation.historyData.GDP[i-1]['import'] * 100.00,
@@ -321,18 +358,6 @@ class _GrowthCardState extends State<GrowthCard> {
       domainFn: (dynamic data, _) => data['session'],
       measureFn: (dynamic data, _) => data['GDP'],
     ));
-//    GDPSeriesList.add(new charts.Series(
-//      id: 'Export',
-//      data: grow,
-//      domainFn: (dynamic data, _) => data['session'],
-//      measureFn: (dynamic data, _) => data['Export'],
-//    ));
-//    GDPSeriesList.add(new charts.Series(
-//      id: 'Import',
-//      data: grow,
-//      domainFn: (dynamic data, _) => data['session'],
-//      measureFn: (dynamic data, _) => data['Import'],
-//    ));
     GDPSeriesList.add(new charts.Series(
       id: 'Population',
       data: grow,
@@ -372,6 +397,117 @@ class _GrowthCardState extends State<GrowthCard> {
     getSeriesGDP();
     List<Widget> contains = <Widget>[];
     contains.add(new Text('Growth Rate %'));
+    contains.add(new SizedBox(
+      height: MediaQuery.of(context).size.height * 0.3,
+      width: MediaQuery.of(context).size.width,
+      child: new charts.LineChart(
+        GDPSeriesList,
+        behaviors: [new charts.SeriesLegend(
+          cellPadding: new EdgeInsets.only(right: 4.0, bottom: 4.0),
+          position: charts.BehaviorPosition.end,
+        )],
+        selectionModels: [
+          new charts.SelectionModelConfig(
+            type: charts.SelectionModelType.info,
+            changedListener: _onSelectionChanged,
+          )
+        ],
+      ),
+    ));
+    if(_session != null){
+      contains.add(new Text('Session ${_session}'));
+      _data.forEach((k, v){
+        contains.add(new Text('${k}: ${v.toStringAsFixed(2)}%'));
+      });
+    }
+
+    return new Card(
+      child: new Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: contains,
+      ),
+    );
+  }
+}
+
+class HappinessCard extends CardChart {
+  HappinessCard({Key key, this.nation, Function change}) : super(key: key, change: change);
+  Nation nation;
+  @override
+  _HappinessCardState createState() => new _HappinessCardState();
+}
+
+class _HappinessCardState extends State<HappinessCard> {
+
+  int _session;
+  Map<String, num> _data;
+  List<charts.Series<dynamic, int>> GDPSeriesList;
+  //List<Map<dynamic, dynamic>> GDP;
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    widget.change = (){
+      setState(() {});
+    };
+  }
+
+  @override
+  void dispose(){
+    //print('chart dispose');
+    super.dispose();
+  }
+
+  void getSeriesGDP(){
+    GDPSeriesList = new List<charts.Series<dynamic, int>>();
+    List<Map<dynamic, dynamic>> d = new List<Map<dynamic, dynamic>>();
+    for(int i = 0; i < widget.nation.historyData.GDP.length; i++){
+      d.add({
+        'session': widget.nation.historyData.GDP[i]['session'],
+        'Happiness': (widget.nation.historyData.GDP[i]['happy'].toDouble() / widget.nation.historyData.GDP[i]['totalHappy']) * 100
+      });
+    }
+    GDPSeriesList.add(new charts.Series(
+      colorFn: (a, x) => charts.MaterialPalette.red.shadeDefault,
+      id: 'Happiness',
+      data: d,
+      domainFn: (dynamic data, _) => data['session'],
+      measureFn: (dynamic data, _) => data['Happiness'],
+    ));
+  }
+
+  _onSelectionChanged(charts.SelectionModel model) {
+    final selectedDatum = model.selectedDatum;
+
+    int session;
+    final measures = <String, num>{};
+
+    // We get the model that updated with a list of [SeriesDatum] which is
+    // simply a pair of series & datum.
+    //
+    // Walk the selection updating the measures map, storing off the sales and
+    // series name for each selection point.
+    if (selectedDatum.isNotEmpty) {
+      session = selectedDatum.first.datum['session'];
+      selectedDatum.forEach((charts.SeriesDatum datumPair) {
+        measures[datumPair.series.id] = datumPair.datum[datumPair.series.id];
+      });
+    }
+
+    // Request a build.
+    setState(() {
+      _session = session;
+      _data = measures;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // TODO: implement build
+    getSeriesGDP();
+    List<Widget> contains = <Widget>[];
+    contains.add(new Text('Happiness %'));
     contains.add(new SizedBox(
       height: MediaQuery.of(context).size.height * 0.3,
       width: MediaQuery.of(context).size.width,
@@ -445,20 +581,18 @@ class _StatPageState extends State<StatPage> with AutomaticKeepAliveClientMixin<
     //load user doc
     //loadUserDoc();
     print('init stat');
+    loading = true;
     if(widget.change == null){
       widget.change = widget.nation.nationStream.listen((data){
         _cardList.forEach((CardChart card){
-          card.change();
+          if(card.change != null){
+            card.change();
+          }
         });
       });
     }else{
       widget.change.resume();
     }
-    loading = true;
-    _cardList.add(new GDPCard(nation: widget.nation,));
-    _cardList.add(new TradeCard(nation: widget.nation,));
-    _cardList.add(new PopulationCard(nation: widget.nation,));
-    _cardList.add(new GrowthCard(nation: widget.nation,));
   }
 
   @override
@@ -478,6 +612,11 @@ class _StatPageState extends State<StatPage> with AutomaticKeepAliveClientMixin<
 
   @override
   Widget build(BuildContext context) {
+    _cardList.add(new GDPCard(nation: widget.nation,));
+    _cardList.add(new TradeCard(nation: widget.nation,));
+    _cardList.add(new PopulationCard(nation: widget.nation,));
+    _cardList.add(new GrowthCard(nation: widget.nation,));
+    _cardList.add(new HappinessCard(nation: widget.nation,));
     return new ListView.builder(
       scrollDirection: Axis.vertical,
       shrinkWrap: true,

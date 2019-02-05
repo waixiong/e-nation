@@ -158,58 +158,24 @@ class _GovernPageState extends State<GovernPage> with AutomaticKeepAliveClientMi
     );
   }
 
+  void _detailsDialog(int index){
+    showDialog(
+      context: context,
+      builder: (BuildContext context){
+        return SimpleDialog(
+          title: Text(specialBuilding[index]),
+          children: <Widget>[
+            //
+          ],
+        );
+      }
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return new Column(
       children: <Widget>[
-//        new Container(
-//          height : 150,
-//          child: new Stack(
-//            fit: StackFit.expand,
-//            children: <Widget>[
-//              Positioned.fill(
-//                child: Image.asset('packages/e_nation/Assets/land.jpg', fit: BoxFit.cover),
-//              ),
-//              new Container(
-//                decoration: BoxDecoration(
-//                  gradient: LinearGradient(
-//                    begin: Alignment(0.0, -0.2),
-//                    end: Alignment.bottomCenter, // 10% of the width, so there are ten blinds.
-//                    colors: [const Color(0x00FFFFFF), const Color(0xEE000000)], // whitish to gray
-//                    tileMode: TileMode.clamp, // repeats the gradient over the canvas
-//                  ),
-//                ),
-//              ),
-//              new Positioned(
-//                bottom: 5,
-//                left: 5,
-//                right: 5,
-//                child: new Row(
-//                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-//                  children: <Widget>[
-//                    new FlatButton(
-//                      onPressed: (){
-//                        print('LAND ADDED');//widget.nation.developLand().then((String react){})
-//                      },
-//                      child: new Text('DELEVOP NEW LAND', style: TextStyle(fontSize: 18, color: Colors.grey),),
-//                    ),
-//                    new Row(
-//                      mainAxisAlignment: MainAxisAlignment.end,
-//                      crossAxisAlignment: CrossAxisAlignment.center,
-//                      children: <Widget>[
-//                        new SizedBox(
-//                          height: 40, width: 40,
-//                          child: Image.asset('packages/e_nation/Assets/landIcon.png', fit: BoxFit.cover),
-//                        ),
-//                        new Text('${widget.nation.landAvailable}/${widget.nation.land}', style: TextStyle(color: Colors.white, fontSize: 30),)
-//                      ],
-//                    )
-//                  ],
-//                ),
-//              )
-//            ],
-//          )
-//        ),
         new Expanded(
           //height: MediaQuery.of(context).size.height - 85 - 150,
           child: new ListView.builder(
@@ -254,18 +220,25 @@ class _GovernPageState extends State<GovernPage> with AutomaticKeepAliveClientMi
                           child: ButtonBar(
                             alignment: MainAxisAlignment.start,
                             children: <Widget>[
-                              FlatButton(
-                                child: widget.nation.specialBuilding[specialBuilding[index]]['upgrade']? new Row(
-                                  children: <Widget>[
-                                    SizedBox(
-                                      height: 16,
-                                      width: 16,
-                                      child: CircularProgressIndicator(valueColor: new AlwaysStoppedAnimation<Color>(textColors[index]), strokeWidth: 2,),
-                                    ),
-                                    Text('  CANCEL')
-                                  ],
-                                ) : Text('UPGRADE'),
-                                textColor: textColors[index],
+                              RaisedButton(
+                                child: new Container(
+                                  width: 100,
+                                  child: new Center(
+                                    child: widget.nation.specialBuilding[specialBuilding[index]]['upgrade']? new Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                      children: <Widget>[
+                                        SizedBox(
+                                          height: 16,
+                                          width: 16,
+                                          child: CircularProgressIndicator(valueColor: new AlwaysStoppedAnimation<Color>(Colors.white), strokeWidth: 2,),
+                                        ),
+                                        Text('  CANCEL')
+                                      ],
+                                    ) : Text('UPGRADE'),
+                                  ),
+                                ),
+                                textColor: Colors.white,//textColors[index],
+                                color: textColors[index],
                                 onPressed: widget.nation.specialBuilding[specialBuilding[index]]['upgrade']? (){
                                   cancelDialog(specialBuilding[index]).then((react){
                                     if(react) {
@@ -284,14 +257,14 @@ class _GovernPageState extends State<GovernPage> with AutomaticKeepAliveClientMi
                                     }
                                   });
                                 } : null),
-                              ),
-                              FlatButton(
-                                child: Text('DETAILS'),
-                                textColor: textColors[index],
-                                onPressed: () async {
-                                  DateTime date = new DateTime.fromMillisecondsSinceEpoch(1546245343602, isUtc: false);
-                                },
-                              ),
+                              )
+//                              FlatButton(
+//                                child: Text('DETAILS'),
+//                                textColor: textColors[index],
+//                                onPressed: () async {
+//                                  DateTime date = new DateTime.fromMillisecondsSinceEpoch(1546245343602, isUtc: false);
+//                                },
+//                              ),
                             ],
                           ),
                         )

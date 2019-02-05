@@ -97,7 +97,7 @@ class ListCard extends StatelessWidget{
     double totalAmount = data['value']['amount'] * (1 + data['value']['interest']/100);
     List<Widget> contents = [];
     //add payment record && detail here
-    List<dynamic> payments = data['value']['paymentDetail'];
+    List<dynamic> payments = data['value']['paymentDetail']?? [];
     payments.forEach((payment){
       DateTime time = DateTime.fromMillisecondsSinceEpoch(payment['timestamp']);
       contents.add(new Padding(

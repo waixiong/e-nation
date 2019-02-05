@@ -5,8 +5,6 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:connectivity/connectivity.dart';
 import 'dart:async';
-import 'package:cached_network_image/cached_network_image.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 
 import 'package:e_nation/Screen/HomePage.dart';
 import 'package:e_nation/Screen/LoginPage.dart';
@@ -22,9 +20,13 @@ import 'package:e_nation/Screen/TradeHistory.dart';
 import 'package:e_nation/Screen/NewsInfo.dart';
 import 'package:e_nation/Screen/Loan.dart';
 import 'package:e_nation/Screen/Notify.dart';
+import 'package:e_nation/Screen/Map.dart';
 
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:path_provider/path_provider.dart';
+
+import 'package:package_info/package_info.dart';
+import 'package:e_nation/Logic/Package.dart';
 
 enum Page {
   HOME, TRADE, GOVERN, STAT
@@ -258,6 +260,7 @@ class _CustomFABState extends State<CustomFAB>
   @override
   dispose() {
     //widget.fabChange.pause();
+    nation.cancelFire();
     _animationController.dispose();
     super.dispose();
   }
@@ -458,8 +461,8 @@ class _CustomFABState extends State<CustomFAB>
         //automaticallyImplyLeading : false,
       ),
       drawer: Drawer(
-        child: ListView(
-          padding: EdgeInsets.zero,
+        child: Column(
+          //padding: EdgeInsets.zero,
           children: <Widget>[
             DrawerHeader(
               child: new Column(
@@ -563,28 +566,45 @@ class _CustomFABState extends State<CustomFAB>
                 Navigator.push(context, new MaterialPageRoute(builder: (BuildContext context) => loanPage));
               },
             ),
-//            ListTile(
-//              title: new Row(
-//                children: <Widget>[
-//                  Container(
-//                    width: 40,
-//                    child: new Icon(Icons.map, size: 24,),
-//                  ),
-//                  new Text('Map')
-//                ],
-//              ),
-//              onTap: (){
-//                print('Map will be shown');
-//                //Navigator.push(context, new MaterialPageRoute(builder: (BuildContext context) => loanPage));
-//              },
-//            ),
+            ListTile(
+              title: new Row(
+                children: <Widget>[
+                  Container(
+                    width: 40,
+                    child: new Icon(Icons.map, size: 24,),
+                  ),
+                  new Text('Map')
+                ],
+              ),
+              onTap: (){
+                print('Map will be shown');
+                Navigator.push(context, new MaterialPageRoute(builder: (BuildContext context) => new Maps(tradeManager: tradeManager, nation: nation,)));
+                //Navigator.push(context, new MaterialPageRoute(builder: (BuildContext context) => loanPage));
+              },
+            ),
             ListTile(
               title: Text('LOGOUT'),
               onTap: () {
+                nation.cancelFire();
                 widget.auth.signOut();
                 Navigator.pushReplacement(context, new MaterialPageRoute(builder: (BuildContext context) => new LoginPage()));
               },
             ),
+            Expanded(
+              child: new Center(
+                child: new Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: <Widget>[
+                    SizedBox(
+                      height: 80,
+                      child: Image.asset('Assets/BuiltWithFirebase.png', package: 'e_nation', fit: BoxFit.fitHeight,),
+                    ),
+                    Text('E-Nation v${Package.packageInfo.version}', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w300),)
+                  ],
+                ),
+              ),
+            )
           ],
         ),
       ),
@@ -632,8 +652,3 @@ class _CustomFABState extends State<CustomFAB>
     );
   }
 }
-
-// Color.fromARGB(255, 66, 156, 234)
-// Color.fromARGB(255, 126, 207, 188)
-// Color.fromARGB(255, 233, 135, 124)
-// Color.fromARGB(255, 252, 214, 133)

@@ -7,6 +7,7 @@ import 'package:firebase_database/firebase_database.dart';
 import 'dart:io' show Platform;
 import 'package:e_nation/Screen/Loading.dart';
 import 'package:flutter/services.dart';
+import 'package:e_nation/Logic/Package.dart';
 
 class LoginPage extends StatefulWidget {
   LoginPage({Key key}) : super(key: key);
@@ -41,6 +42,7 @@ class _LoginPageState extends State<LoginPage> {
   @override
   initState(){
     super.initState();
+    Package.getVersion();
   }
 
   //final FirebaseAuth auth = FirebaseAuth.instance;
@@ -181,30 +183,13 @@ class _LoginPageState extends State<LoginPage> {
                   },
                   color: Theme.of(context).primaryColor,
                   child: new Center(
-                      child: !onLogin? new Text('Login',
-                        style: new TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16.0,
-                          color: Colors.white,
-                        ),
-                      ) : new Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: <Widget>[
-                          Container(
-                            height: 12,
-                            width: 12,
-                            child: CircularProgressIndicator(strokeWidth: 2,),
-                          ),
-                          new Text('Login',
-                            style: new TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16.0,
-                              color: Colors.white,
-                            ),
-                          )
-                        ],
-                      )
+                    child: new Text('Login',
+                      style: new TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16.0,
+                        color: Colors.white,
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -217,6 +202,13 @@ class _LoginPageState extends State<LoginPage> {
     print('login build');
     if(checkUser){
       LoginStack.add(Loading());
+    }else if(onLogin){
+      LoginStack.add(new Container(
+        width: MediaQuery.of(context).size.width,
+        height: MediaQuery.of(context).size.height,
+        decoration: BoxDecoration(color: Color.fromARGB(96, 0, 0, 0)),
+        child: AuthLoading(),
+      ));
     }
     return Stack(
       fit: StackFit.expand,
