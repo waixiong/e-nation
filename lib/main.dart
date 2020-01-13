@@ -41,7 +41,7 @@ class MyApp extends StatelessWidget {
   }
 
   Future<String> _signIn() async {
-    final FirebaseUser user = await _auth.signInWithEmailAndPassword(email: 'waixiong1997@gmail.com', password: '425cwX000');
+    final FirebaseUser user = await _auth.signInWithEmailAndPassword(email: 'waixiong@nyes.com', password: '123456');
     assert(user.email != null);
     //assert(user.displayName != null);
     assert(!user.isAnonymous);
